@@ -1,0 +1,61 @@
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Logs
+*.log
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+*.egg-info/
+.eggs/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# Backend (weights & runtime artifacts)
+back-end/venv/
+back-end/debug_crops/
+back-end/models/*.pt
+back-end/models/*.pth
+back-end/models/*.onnx
+
+# Node / Expo / React Native
+node_modules/
+.expo/
+dist/
+web-build/
+*.tsbuildinfo
+
+# Metro
+.metro-health-check*
+
+# Native signing (if ever added at repo root)
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# IDEs
+.idea/
