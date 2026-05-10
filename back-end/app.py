@@ -46,60 +46,60 @@ DEBUG_DIR.mkdir(exist_ok=True)
 
 # Model classes
 CRACK_CLASSES = [
-    "Longitudinal Crack",
-    "Transverse Crack",
-    "Alligator Crack",
-    "Pothole",
-    "Repair",
+    "Поздовжня тріщина",
+    "Поперечна тріщина",
+    "Сітчаста тріщина",
+    "Яма",
+    "Ремонт",
     "D44",
-    "Other",
-    "Manhole",
+    "Інше",
+    "Люк",
 ]
 
 GTSRB_CLASSES = {
-    0: "Speed limit (20km/h)",
-    1: "Speed limit (30km/h)",
-    2: "Speed limit (50km/h)",
-    3: "Speed limit (60km/h)",
-    4: "Speed limit (70km/h)",
-    5: "Speed limit (80km/h)",
-    6: "End of speed limit (80km/h)",
-    7: "Speed limit (100km/h)",
-    8: "Speed limit (120km/h)",
-    9: "No passing",
-    10: "No passing for vehicles over 3.5 metric tons",
-    11: "Right-of-way at the next intersection",
-    12: "Priority road",
-    13: "Yield",
-    14: "Stop",
-    15: "No vehicles",
-    16: "Vehicles over 3.5 metric tons prohibited",
-    17: "No entry",
-    18: "General caution",
-    19: "Dangerous curve to the left",
-    20: "Dangerous curve to the right",
-    21: "Double curve",
-    22: "Bumpy road",
-    23: "Slippery road",
-    24: "Road narrows on the right",
-    25: "Road work",
-    26: "Traffic signals",
-    27: "Pedestrians",
-    28: "Children crossing",
-    29: "Bicycles crossing",
-    30: "Beware of ice/snow",
-    31: "Wild animals crossing",
-    32: "End of all speed and passing limits",
-    33: "Turn right ahead",
-    34: "Turn left ahead",
-    35: "Ahead only",
-    36: "Go straight or right",
-    37: "Go straight or left",
-    38: "Keep right",
-    39: "Keep left",
-    40: "Roundabout mandatory",
-    41: "End of no passing",
-    42: "End of no passing by vehicles over 3.5 metric tons",
+    0: "Обмеження швидкості (20км/год)",
+    1: "Обмеження швидкості (30км/год)",
+    2: "Обмеження швидкості (50км/год)",
+    3: "Обмеження швидкості (60км/год)",
+    4: "Обмеження швидкості (70км/год)",
+    5: "Обмеження швидкості (80км/год)",
+    6: "Кінець обмеження швидкості (80км/год)",
+    7: "Обмеження швидкості (100км/год)",
+    8: "Обмеження швидкості (120км/год)",
+    9: "Обгін заборонено",
+    10: "Обгін заборонено для транспорту понад 3.5 тонн",
+    11: "Перехрестя з другорядною дорогою",
+    12: "Головна дорога",
+    13: "Поступіться дорогою",
+    14: "Стоп",
+    15: "Рух заборонено",
+    16: "Рух транспорту понад 3.5 тонн заборонено",
+    17: "В'їзд заборонено",
+    18: "Увага",
+    19: "Небезпечний поворот ліворуч",
+    20: "Небезпечний поворот праворуч",
+    21: "Подвійний поворот",
+    22: "Нерівна дорога",
+    23: "Слизька дорога",
+    24: "Звуження дороги праворуч",
+    25: "Дорожні роботи",
+    26: "Світлофор",
+    27: "Пішохідний перехід",
+    28: "Діти",
+    29: "Велосипедисти",
+    30: "Обережно, ожеледиця",
+    31: "Дикі тварини",
+    32: "Кінець всіх обмежень",
+    33: "Поворот праворуч",
+    34: "Поворот ліворуч",
+    35: "Рух прямо",
+    36: "Рух прямо або праворуч",
+    37: "Рух прямо або ліворуч",
+    38: "Об'їзд праворуч",
+    39: "Об'їзд ліворуч",
+    40: "Круговий рух",
+    41: "Кінець заборони обгону",
+    42: "Кінець заборони обгону для транспорту понад 3.5 тонн",
 }
 
 
@@ -250,7 +250,7 @@ async def process_image_to_array(
 def detect_cracks(image: np.ndarray) -> tuple[list[Detection], float]:
     """Detect cracks using YOLOv8 model"""
     if not models_status["cracks_detector"] or crack_detector is None:
-        raise HTTPException(status_code=503, detail="Cracks detector not loaded")
+        raise HTTPException(status_code=503, detail="Детектор тріщин не завантажено")
 
     try:
         results = crack_detector.predict(source=image, device=DEVICE, verbose=True)
@@ -302,15 +302,15 @@ def detect_cracks(image: np.ndarray) -> tuple[list[Detection], float]:
     except Exception as e:
         logger.error(f"Error in crack detection: {e}")
         raise HTTPException(
-            status_code=500, detail=f"Error in crack detection: {str(e)}"
+            status_code=500, detail=f"Помилка при виявленні тріщин: {str(e)}"
         )
 
 
 def classify_signs(image: np.ndarray) -> tuple[list[Detection], float]:
     if not models_status["signs_classifier"] or signs_classifier is None:
-        raise HTTPException(status_code=503, detail="Signs classifier not loaded")
+        raise HTTPException(status_code=503, detail="Класифікатор знаків не завантажено")
     if not models_status["sign_detector"] or sign_detector is None:
-        raise HTTPException(status_code=503, detail="Sign detector not loaded")
+        raise HTTPException(status_code=503, detail="Детектор знаків не завантажено")
 
     try:
         detections = []
@@ -371,7 +371,7 @@ def classify_signs(image: np.ndarray) -> tuple[list[Detection], float]:
                 class_id_int = int(class_id.item())
 
                 class_name = GTSRB_CLASSES.get(
-                    class_id_int, f"Unknown class {class_id_int}"
+                    class_id_int, f"Невідомий клас {class_id_int}"
                 )
 
                 detections.append(
@@ -399,7 +399,7 @@ def classify_signs(image: np.ndarray) -> tuple[list[Detection], float]:
 
     except Exception as e:
         logger.error(f"Error in sign classification: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Помилка при класифікації знаків: {str(e)}")
 
 
 # Routes
@@ -431,7 +431,7 @@ async def detect_cracks_endpoint(file: UploadFile = File(...)):
 
         return ProcessingResult(
             success=True,
-            message=f"Found {len(detections)} cracks",
+            message=f"Знайдено {len(detections)} тріщин",
             detections=detections,
             model_used="YOLOv8 Crack Detector",
             processing_time=proc_time,
@@ -441,7 +441,7 @@ async def detect_cracks_endpoint(file: UploadFile = File(...)):
         raise
     except Exception as e:
         logger.error(f"Error processing image: {e}")
-        raise HTTPException(status_code=500, detail=f"Error processing image: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Помилка обробки зображення: {str(e)}")
 
 
 @app.post("/classify/signs", response_model=ProcessingResult)
@@ -457,7 +457,7 @@ async def classify_signs_endpoint(file: UploadFile = File(...)):
 
         return ProcessingResult(
             success=True,
-            message=f"Found and classified {len(detections)} signs",
+            message=f"Знайдено та класифіковано {len(detections)} знаків",
             detections=detections,
             model_used="GTSRB Signs Classifier",
             processing_time=proc_time,
@@ -467,7 +467,7 @@ async def classify_signs_endpoint(file: UploadFile = File(...)):
         raise
     except Exception as e:
         logger.error(f"Error processing image: {e}")
-        raise HTTPException(status_code=500, detail=f"Error processing image: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Помилка обробки зображення: {str(e)}")
 
 
 @app.post("/process/all", response_model=dict)
@@ -505,11 +505,11 @@ async def process_all_models(file: UploadFile = File(...)):
         except Exception as e:
             results["signs"] = {"success": False, "error": str(e) or repr(e)}
 
-        return {"success": True, "message": "Processing complete", "results": results}
+        return {"success": True, "message": "Обробка завершена", "results": results}
 
     except Exception as e:
         logger.error(f"Error processing image: {e}")
-        raise HTTPException(status_code=500, detail=f"Error processing image: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Помилка обробки зображення: {str(e)}")
 
 
 @app.get("/")

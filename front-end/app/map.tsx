@@ -26,9 +26,13 @@ const API_BASE = (() => {
     return Platform.OS === "android" ? "http://10.0.2.2:8000" : "http://localhost:8000";
 })();
 
+const BACKEND_MAX_DIMENSION = 1024;
+const MIN_DRAW_CONFIDENCE = 0.5;
+
 type ApiDetection = {
     class_name?: string;
     confidence: number;
+    bbox?: number[] | { x: number; y: number; w: number; h: number } | { x1: number; y1: number; x2: number; y2: number };
 };
 type ApiSingleResponse = {
     success: boolean;
@@ -38,6 +42,35 @@ type ApiSingleResponse = {
     processing_time?: number;
 };
 
+const normalizeBbox = (bbox: ApiDetection["bbox"]): { x: number; y: number; w: number; h: number } | undefined => {
+    if (!bbox) return undefined;
+
+    if (Array.isArray(bbox) && bbox.length >= 4) {
+        const [x, y, w, h] = bbox;
+        return { x, y, w, h };
+    }
+
+    const b = bbox as Record<string, number>;
+    if (b.x != null && b.y != null && b.w != null && b.h != null) {
+        return { x: b.x, y: b.y, w: b.w, h: b.h };
+    }
+
+    return {
+        x: b.x1,
+        y: b.y1,
+        w: Math.max(0, b.x2 - b.x1),
+        h: Math.max(0, b.y2 - b.y1)
+    };
+};
+
+const getBackendInputSize = (natural: { w: number; h: number }) => {
+    const scale = Math.min(BACKEND_MAX_DIMENSION / natural.w, BACKEND_MAX_DIMENSION / natural.h, 1);
+    return {
+        w: natural.w * scale,
+        h: natural.h * scale
+    };
+};
+
 export default function TrafficSignsScreen() {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
@@ -45,6 +78,11 @@ export default function TrafficSignsScreen() {
     const [message, setMessage] = useState<string | null>(null);
     const [modelUsed, setModelUsed] = useState<string | null>(null);
     const [rows, setRows] = useState<Array<{ class_name: string; confidence: number }>>([]);
+    const [detections, setDetections] = useState<
+        Array<{ class_name: string; confidence: number; bbox?: { x: number; y: number; w: number; h: number } }>
+    >([]);
+    const [imageNaturalSize, setImageNaturalSize] = useState<{ w: number; h: number } | null>(null);
+    const [imageLayout, setImageLayout] = useState<{ w: number; h: number } | null>(null);
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
     const pickImage = async () => {
@@ -63,6 +101,15 @@ export default function TrafficSignsScreen() {
         }
         const asset = picked.assets[0]!;
         setSelectedImage(asset.uri);
+        // get natural image size for bbox scaling
+        Image.getSize(
+            asset.uri,
+            (w, h) => setImageNaturalSize({ w, h }),
+            () => setImageNaturalSize(null)
+        );
+        setDetections([]);
+        setRows([]);
+        setMessage(null);
         setError(null);
     };
 
@@ -76,6 +123,7 @@ export default function TrafficSignsScreen() {
         setMessage(null);
         setModelUsed(null);
         setRows([]);
+        setDetections([]);
 
         if (API_BASE.length === 0) {
             setError("Встановіть EXPO_PUBLIC_API_URL для релізних збірок");
@@ -110,12 +158,23 @@ export default function TrafficSignsScreen() {
             }));
             parsedRows.sort((a, b) => b.confidence - a.confidence);
             setRows(parsedRows);
+
+            // normalize detections with bbox when available
+            const parsedDetections = (data.detections ?? []).map((d) => {
+                return {
+                    class_name: d.class_name ?? "Sign",
+                    confidence: d.confidence,
+                    bbox: normalizeBbox(d.bbox)
+                };
+            });
+            setDetections(parsedDetections);
             setMessage(data.message);
             setModelUsed(data.model_used ?? null);
         } catch (e) {
             const msg = e instanceof Error ? e.message : String(e);
             setError(msg);
             setRows([]);
+            setDetections([]);
         } finally {
             setLoading(false);
         }
@@ -154,7 +213,41 @@ export default function TrafficSignsScreen() {
                         <Image
                             source={{ uri: selectedImage }}
                             style={styles.imagePreview}
+                            onLayout={(ev) => {
+                                const { width: w, height: h } = ev.nativeEvent.layout;
+                                setImageLayout({ w, h });
+                            }}
                         />
+                        {/* draw bbox overlays */}
+                        {imageNaturalSize && imageLayout && detections.length > 0 && (
+                            <View style={StyleSheet.absoluteFill} pointerEvents="none">
+                                {detections.map((det, idx) => {
+                                    if (!det.bbox || det.confidence <= MIN_DRAW_CONFIDENCE) return null;
+                                    const backendSize = getBackendInputSize(imageNaturalSize);
+                                    const scaleX = imageLayout.w / backendSize.w;
+                                    const scaleY = imageLayout.h / backendSize.h;
+                                    const left = det.bbox.x * scaleX;
+                                    const top = det.bbox.y * scaleY;
+                                    const boxW = det.bbox.w * scaleX;
+                                    const boxH = det.bbox.h * scaleY;
+                                    return (
+                                        <View
+                                            key={`box-${idx}`}
+                                            style={{
+                                                position: "absolute",
+                                                left,
+                                                top,
+                                                width: boxW,
+                                                height: boxH,
+                                                borderWidth: 2,
+                                                borderColor: "rgba(30,144,255,0.9)",
+                                                backgroundColor: "rgba(30,144,255,0.12)"
+                                            }}
+                                        />
+                                    );
+                                })}
+                            </View>
+                        )}
                         <Pressable
                             style={styles.removeImageButton}
                             onPress={() => setSelectedImage(null)}
