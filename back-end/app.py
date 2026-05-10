@@ -253,11 +253,15 @@ def detect_cracks(image: np.ndarray) -> tuple[list[Detection], float]:
         raise HTTPException(status_code=503, detail="Cracks detector not loaded")
 
     try:
-        results = crack_detector.predict(source=image, device=DEVICE)
+        results = crack_detector.predict(source=image, device=DEVICE, verbose=True)
         detections = []
+
+        # Create debug image with all detections
+        debug_image = image.copy()
 
         for result in results:
             boxes = result.boxes
+            logger.info(f"YOLO crack detector found {len(boxes)} objects")
             for box in boxes:
                 x1, y1, x2, y2 = box.xyxy[0].tolist()
                 confidence = box.conf[0].item()
@@ -268,6 +272,8 @@ def detect_cracks(image: np.ndarray) -> tuple[list[Detection], float]:
                     else f"Class {class_id}"
                 )
 
+                logger.info(f"Detection: {class_name} with confidence {confidence:.3f} at bbox [{x1:.1f}, {y1:.1f}, {x2:.1f}, {y2:.1f}]")
+
                 detections.append(
                     Detection(
                         class_name=class_name,
@@ -275,6 +281,21 @@ def detect_cracks(image: np.ndarray) -> tuple[list[Detection], float]:
                         bbox={"x1": x1, "y1": y1, "x2": x2, "y2": y2},
                     )
                 )
+
+                # Draw bounding box on debug image
+                cv2.rectangle(debug_image, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2)
+                # Draw label with class name and confidence
+                label = f"{class_name}: {confidence:.2f}"
+                cv2.putText(debug_image, label, (int(x1), int(y1) - 10),
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+
+        # Save debug image if there are detections
+        if detections:
+            debug_path = DEBUG_DIR / f"cracks_debug_{uuid.uuid4().hex}.jpg"
+            cv2.imwrite(str(debug_path), debug_image)
+            logger.info(f"Saved debug image with {len(detections)} detections to {debug_path}")
+        else:
+            logger.info("No crack detections found in this image")
 
         return detections, 0.0
 
@@ -293,6 +314,9 @@ def classify_signs(image: np.ndarray) -> tuple[list[Detection], float]:
 
     try:
         detections = []
+
+        # Create debug image with all detections
+        debug_image = image.copy()
 
         # Вмикаємо verbose=True, щоб у консолі бекенду було видно лог YOLO
         yolo_results = sign_detector.predict(source=image, device=DEVICE, verbose=True)
@@ -357,6 +381,19 @@ def classify_signs(image: np.ndarray) -> tuple[list[Detection], float]:
                         bbox={"x1": x1, "y1": y1, "x2": x2, "y2": y2},
                     )
                 )
+
+                # Draw bounding box on debug image
+                cv2.rectangle(debug_image, (x1, y1), (x2, y2), (255, 0, 0), 2)
+                # Draw label with class name and confidence
+                label = f"{class_name}: {confidence.item():.2f}"
+                cv2.putText(debug_image, label, (x1, y1 - 10),
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
+
+        # Save debug image if there are detections
+        if detections:
+            debug_path = DEBUG_DIR / f"signs_debug_{uuid.uuid4().hex}.jpg"
+            cv2.imwrite(str(debug_path), debug_image)
+            logger.info(f"Saved debug image with {len(detections)} detections to {debug_path}")
 
         return detections, 0.0
 

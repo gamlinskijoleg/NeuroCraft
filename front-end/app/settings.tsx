@@ -1,17 +1,46 @@
-import { SafeAreaView, StyleSheet, Text, View } from "react-native";
+import Ionicons from "@expo/vector-icons/build/Ionicons";
+import { useRouter } from "expo-router";
+import React from "react";
+import { Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function SettingsTabScreen() {
+    const router = useRouter();
     return (
         <SafeAreaView style={styles.screen}>
-            <View style={styles.card}>
-                <Text style={styles.title}>Settings</Text>
-                <Text style={styles.text}>Settings placeholder.</Text>
-            </View>
+            <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={true}>
+                <StatusBar barStyle="dark-content" />
+                {/* Header */}
+                <View style={styles.headerContainer}>
+                    <Pressable onPress={() => router.back()} style={styles.backButton}>
+                        <Ionicons name="arrow-back" size={24} color="#1A2343" />
+                    </Pressable>
+                    <Text style={styles.brand}>Налаштування</Text>
+                    <View style={{ width: 40 }} />
+                </View>
+            </ScrollView>
         </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
+    headerContainer: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        marginBottom: 16
+    },
+    scroll: { paddingHorizontal: 14, paddingTop: 10, paddingBottom: 18 },
+
+    backButton: {
+        padding: 8
+    },
+    brand: {
+        fontSize: 20,
+        fontWeight: "700",
+        color: "#1A2343"
+    },
+
     screen: {
         flex: 1,
         backgroundColor: "#F5F5F7",

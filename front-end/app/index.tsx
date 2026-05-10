@@ -2,16 +2,15 @@ import { useRouter, useSegments } from "expo-router";
 import { useState, useEffect, useRef } from "react";
 import { Animated, Easing } from "react-native";
 import {
-    SafeAreaView,
     ScrollView,
     StatusBar,
     StyleSheet,
     Text,
     View,
     Pressable,
-    Image,
     Dimensions,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 
 const { width } = Dimensions.get("window");
@@ -27,14 +26,14 @@ type Category = {
 const categories: Category[] = [
     {
         id: "traffic",
-        title: "Traffic landmarks",
-        description: "Road signs, traffic lights, traffic obstructions, etc.",
+        title: "Дорожні знаки",
+        description: "Дорожні знаки, світлофори, перешкоди тощо",
         color: "#1E90FF",
     },
     {
         id: "damage",
-        title: "Road damage",
-        description: "Potholes, cracks, landslides, subsidence, etc.",
+        title: "Пошкодження дороги",
+        description: "Ямки, тріщини, зсуви, просідання тощо",
         color: "#FF6B6B",
     },
 ];
@@ -42,13 +41,13 @@ const categories: Category[] = [
 const updates = [
     {
         id: 1,
-        title: "New scanning mode",
-        description: "Improved computer vision for challenging weather conditions",
+        title: "Новий режим сканування",
+        description: "Покращене комп'ютерне бачення для складних погодних умов",
     },
     {
         id: 2,
-        title: "Release of a new model",
-        description: "A model that scans roadworks and traffic jams.",
+        title: "Випуск нової моделі",
+        description: "Модель, яка сканує дорожні роботи та затори",
     },
 ];
 
@@ -112,8 +111,8 @@ export default function HomeScreen() {
                 {/* Header */}
                 <View style={styles.header}>
                     <Text style={styles.title}>EasyRoad</Text>
-                    <Text style={styles.subtitle}>What will you choose today?</Text>
-                    <Text style={styles.description}>Select the category you would like to scan with EasyRoad</Text>
+                    <Text style={styles.subtitle}>Що оберете сьогодні?</Text>
+                    <Text style={styles.description}>Виберіть категорію, яку хочете сканувати з EasyRoad</Text>
                 </View>
 
                 {/* Carousel */}
@@ -152,7 +151,7 @@ export default function HomeScreen() {
 
                 {/* Follow Our Updates */}
                 <View style={styles.updatesSection}>
-                    <Text style={styles.updatesTitle}>Follow our updates</Text>
+                    <Text style={styles.updatesTitle}>Слідкуйте за оновленнями</Text>
 
                     {updates.map((update) => (
                         <View key={update.id} style={styles.updateCard}>
@@ -178,7 +177,7 @@ export default function HomeScreen() {
                         style={[styles.navItem, activeTab === "index" ? styles.navItemActive : null]}
                     >
                         <Ionicons name="home" size={20} color={activeTab === "index" ? "#1a1a2e" : "#fff"} />
-                        {activeTab === "index" && <Text style={styles.navLabelActive}>Home</Text>}
+                        {activeTab === "index" && <Text style={styles.navLabelActive}>Головна</Text>}
                     </Pressable>
                 </Animated.View>
 
@@ -190,7 +189,7 @@ export default function HomeScreen() {
                         style={[styles.navItemCircle, activeTab === "road" ? styles.navItemCircleActive : null]}
                     >
                         <Ionicons name="car-sport" size={20} color={activeTab === "road" ? "#1a1a2e" : "#fff"} />
-                        {activeTab === "road" && <Text style={styles.navLabelActive}>Road</Text>}
+                        {activeTab === "road" && <Text style={styles.navLabelActive}>Дорога</Text>}
                     </Pressable>
                 </Animated.View>
 
@@ -202,7 +201,7 @@ export default function HomeScreen() {
                         style={[styles.navItemCircle, activeTab === "map" ? styles.navItemCircleActive : null]}
                     >
                         <Ionicons name="locate" size={20} color={activeTab === "map" ? "#1a1a2e" : "#fff"} />
-                        {activeTab === "map" && <Text style={styles.navLabelActive}>Map</Text>}
+                        {activeTab === "map" && <Text style={styles.navLabelActive}>Карта</Text>}
                     </Pressable>
                 </Animated.View>
 
@@ -214,7 +213,7 @@ export default function HomeScreen() {
                         style={[styles.navItemCircle, activeTab === "settings" ? styles.navItemCircleActive : null]}
                     >
                         <Ionicons name="settings" size={20} color={activeTab === "settings" ? "#1a1a2e" : "#fff"} />
-                        {activeTab === "settings" && <Text style={styles.navLabelActive}>Settings</Text>}
+                        {activeTab === "settings" && <Text style={styles.navLabelActive}>Налаштування</Text>}
                     </Pressable>
                 </Animated.View>
             </View>
@@ -251,7 +250,6 @@ const styles = StyleSheet.create({
     },
     carouselContainer: {
         height: 260,
-        marginVertical: 20,
     },
     cardWrapper: {
         width: CARD_WIDTH,
@@ -288,7 +286,6 @@ const styles = StyleSheet.create({
     /* carousel indicators removed */
     updatesSection: {
         paddingHorizontal: 20,
-        paddingVertical: 20,
     },
     updatesTitle: {
         fontSize: 16,

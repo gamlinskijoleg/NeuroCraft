@@ -6,7 +6,6 @@ import {
     Image,
     Platform,
     Pressable,
-    SafeAreaView,
     ScrollView,
     StatusBar,
     StyleSheet,
@@ -14,6 +13,7 @@ import {
     View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const API_BASE = (() => {
     const env = process.env.EXPO_PUBLIC_API_URL;
@@ -50,7 +50,7 @@ export default function TrafficSignsScreen() {
     const pickImage = async () => {
         const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (!permission.granted) {
-            setError("Photo library permission is required.");
+            setError("Необхідний дозвіл на доступ до фотогалереї");
             return;
         }
         const picked = await ImagePicker.launchImageLibraryAsync({
@@ -68,7 +68,7 @@ export default function TrafficSignsScreen() {
 
     const performScan = async () => {
         if (!selectedImage) {
-            setError("Please select an image first.");
+            setError("Спочатку виберіть зображення");
             return;
         }
 
@@ -78,7 +78,7 @@ export default function TrafficSignsScreen() {
         setRows([]);
 
         if (API_BASE.length === 0) {
-            setError("Set EXPO_PUBLIC_API_URL for release builds.");
+            setError("Встановіть EXPO_PUBLIC_API_URL для релізних збірок");
             return;
         }
 
@@ -137,14 +137,14 @@ export default function TrafficSignsScreen() {
                     >
                         <Ionicons name="arrow-back" size={24} color="#1A2343" />
                     </Pressable>
-                    <Text style={styles.brand}>Traffic Signs</Text>
+                    <Text style={styles.brand}>Дорожні знаки</Text>
                     <View style={{ width: 40 }} />
                 </View>
 
                 <View style={styles.descriptionBox}>
                     <Ionicons name="information-circle" size={20} color="#1A2241" />
                     <Text style={styles.description}>
-                        Recognize and classify traffic signs and landmarks.
+                        Розпізнавання та класифікація дорожніх знаків
                     </Text>
                 </View>
 
@@ -171,7 +171,7 @@ export default function TrafficSignsScreen() {
                 >
                     <Ionicons name="cloud-upload" size={20} color="#1A2241" />
                     <Text style={styles.uploadBtnText}>
-                        {selectedImage ? "Change Image" : "Upload Image"}
+                        {selectedImage ? "Змінити зображення" : "Завантажити зображення"}
                     </Text>
                 </Pressable>
 
@@ -189,7 +189,7 @@ export default function TrafficSignsScreen() {
                     ) : (
                         <>
                             <Ionicons name="scan" size={20} color="#fff" />
-                            <Text style={styles.scanBtnText}>Start Scan</Text>
+                            <Text style={styles.scanBtnText}>Почати сканування</Text>
                         </>
                     )}
                 </Pressable>
@@ -205,15 +205,15 @@ export default function TrafficSignsScreen() {
                 {/* Results Section */}
                 {message != null && (
                     <View style={styles.recentWrap}>
-                        <Text style={styles.recentTitle}>Scan Results</Text>
+                        <Text style={styles.recentTitle}>Результати сканування</Text>
                         <View style={styles.resultCard}>
                             <Text style={styles.resultTitle}>{message}</Text>
                             <Text style={styles.resultMeta}>
-                                Traffic signs • {rows.length} detections
+                                Дорожні знаки • {rows.length} виявлень
                             </Text>
                             {modelUsed != null ? (
                                 <Text style={styles.resultMeta}>
-                                    Model: {modelUsed}
+                                    Модель: {modelUsed}
                                 </Text>
                             ) : null}
                             <View style={styles.detectionsList}>
