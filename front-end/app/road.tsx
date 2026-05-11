@@ -192,7 +192,13 @@ export default function RoadDamageScreen() {
                     <View style={styles.imagePreviewContainer}>
                         <Image
                             source={{ uri: selectedImage }}
-                            style={styles.imagePreview}
+                            resizeMode="contain"
+                            style={[
+                                styles.imagePreview,
+                                imageNaturalSize
+                                    ? { aspectRatio: imageNaturalSize.w / imageNaturalSize.h }
+                                    : null,
+                            ]}
                             onLayout={(ev) => {
                                 const { width: w, height: h } = ev.nativeEvent.layout;
                                 setImageLayout({ w, h });
@@ -343,11 +349,12 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.08,
         shadowRadius: 4,
         elevation: 2,
-        marginBottom: 16
+        marginBottom: 16,
+        alignSelf: "center",
+        width: "80%",
     },
     imagePreview: {
         width: "100%",
-        height: 200,
         backgroundColor: "#F5F5F7"
     },
     removeImageButton: {
