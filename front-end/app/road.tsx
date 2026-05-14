@@ -1,20 +1,10 @@
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import { ActivityIndicator, Image, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Image, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-
-const API_BASE = (() => {
-    const env = process.env.EXPO_PUBLIC_API_URL;
-    if (env !== undefined && env !== "") {
-        return env.replace(/\/$/, "");
-    }
-    if (!__DEV__) {
-        return "";
-    }
-    return Platform.OS === "android" ? "http://10.0.2.2:8000" : "http://localhost:8000";
-})();
+import { API_BASE, API_ENDPOINTS } from "../config";
 
 const BACKEND_MAX_DIMENSION = 1024;
 const MIN_DRAW_CONFIDENCE = 0.5;
@@ -130,8 +120,7 @@ export default function RoadDamageScreen() {
                 type: "image/jpeg"
             } as unknown as Blob);
 
-            const endpoint = "/detect/cracks";
-            const res = await fetch(`${API_BASE}${endpoint}`, {
+            const res = await fetch(`${API_BASE}${API_ENDPOINTS.DETECT_CRACKS}`, {
                 method: "POST",
                 body: form
             });

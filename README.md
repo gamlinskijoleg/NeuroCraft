@@ -65,7 +65,7 @@ Then press `i` / `a` / `w` in the terminal for iOS simulator, Android emulator, 
 ### Pointing the app at your API
 
 The app calls **`POST /process/all`** on a configurable base URL.
-
+**API configuration is now centralized in [`front-end/config.ts`](front-end/config.ts).** All API endpoints are defined as constants for easy reuse. See [front-end/API_CONFIG.md](front-end/API_CONFIG.md) for detailed setup instructions.
 - **Development default:**
   - iOS simulator / web: `http://localhost:8000`
   - Android emulator: `http://10.0.2.2:8000` (maps to the host machine)

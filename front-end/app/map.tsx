@@ -4,7 +4,6 @@ import { useState } from "react";
 import {
     ActivityIndicator,
     Image,
-    Platform,
     Pressable,
     ScrollView,
     StatusBar,
@@ -14,17 +13,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-const API_BASE = (() => {
-    const env = process.env.EXPO_PUBLIC_API_URL;
-    if (env !== undefined && env !== "") {
-        return env.replace(/\/$/, "");
-    }
-    if (!__DEV__) {
-        return "";
-    }
-    return Platform.OS === "android" ? "http://10.0.2.2:8000" : "http://localhost:8000";
-})();
+import { API_BASE, API_ENDPOINTS } from "../config";
 
 const BACKEND_MAX_DIMENSION = 1024;
 const MIN_DRAW_CONFIDENCE = 0.5;
@@ -139,8 +128,7 @@ export default function TrafficSignsScreen() {
                 type: "image/jpeg",
             } as unknown as Blob);
 
-            const endpoint = "/classify/signs";
-            const res = await fetch(`${API_BASE}${endpoint}`, {
+            const res = await fetch(`${API_BASE}${API_ENDPOINTS.CLASSIFY_SIGNS}`, {
                 method: "POST",
                 body: form,
             });
