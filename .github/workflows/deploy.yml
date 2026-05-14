@@ -7,6 +7,8 @@ on:
     paths:
       - 'back-end/**'
       - 'render.yaml'
+      - 'runtime.txt'
+      - '.python-version'
       - '.github/workflows/deploy.yml'
   workflow_dispatch:
 
