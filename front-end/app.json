@@ -42,6 +42,9 @@
         "experiments": {
             "typedRoutes": true,
             "reactCompiler": true
+        },
+        "extra": {
+            "API_URL": "https://neurocraft-backend.onrender.com"
         }
     }
 }

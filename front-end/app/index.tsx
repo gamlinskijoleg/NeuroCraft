@@ -61,7 +61,7 @@ export default function HomeScreen() {
     const scalesRef = useRef({
         index: new Animated.Value(1),
         road: new Animated.Value(1),
-        map: new Animated.Value(1),
+        signs: new Animated.Value(1),
         settings: new Animated.Value(1),
     });
 
@@ -72,7 +72,7 @@ export default function HomeScreen() {
         } else {
             const last = segments[segments.length - 1];
             if (last === "road") setActiveTab("road");
-            else if (last === "map") setActiveTab("map");
+            else if (last === "signs") setActiveTab("signs");
             else if (last === "settings") setActiveTab("settings");
             else setActiveTab("index");
         }
@@ -80,7 +80,7 @@ export default function HomeScreen() {
 
     // animate scales when activeTab changes
     useEffect(() => {
-        const keys = ["index", "road", "map", "settings"] as const;
+        const keys = ["index", "road", "signs", "settings"] as const;
         const animations: Animated.CompositeAnimation[] = [];
         keys.forEach((k) => {
             const toValue = k === activeTab ? 1.06 : 1;
@@ -98,7 +98,7 @@ export default function HomeScreen() {
 
     const handleCategoryPress = (categoryId: string) => {
         if (categoryId === "traffic") {
-            router.push("/map");
+            router.push("/signs");
         } else if (categoryId === "damage") {
             router.push("/road");
         }
@@ -193,15 +193,15 @@ export default function HomeScreen() {
                     </Pressable>
                 </Animated.View>
 
-                <Animated.View style={{ transform: [{ scale: scalesRef.current.map }] }}>
+                <Animated.View style={{ transform: [{ scale: scalesRef.current.signs }] }}>
                     <Pressable
                         onPress={() => {
-                            router.push("/map");
+                            router.push("/signs");
                         }}
-                        style={[styles.navItemCircle, activeTab === "map" ? styles.navItemCircleActive : null]}
+                        style={[styles.navItemCircle, activeTab === "signs" ? styles.navItemCircleActive : null]}
                     >
-                        <Ionicons name="locate" size={20} color={activeTab === "map" ? "#1a1a2e" : "#fff"} />
-                        {activeTab === "map" && <Text style={styles.navLabelActive}>Карта</Text>}
+                        <Ionicons name="locate" size={20} color={activeTab === "signs" ? "#1a1a2e" : "#fff"} />
+                        {activeTab === "signs" && <Text style={styles.navLabelActive}>Знаки</Text>}
                     </Pressable>
                 </Animated.View>
 
