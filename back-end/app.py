@@ -272,7 +272,9 @@ def detect_cracks(image: np.ndarray) -> tuple[list[Detection], float]:
                     else f"Class {class_id}"
                 )
 
-                logger.info(f"Detection: {class_name} with confidence {confidence:.3f} at bbox [{x1:.1f}, {y1:.1f}, {x2:.1f}, {y2:.1f}]")
+                logger.info(
+                    f"Detection: {class_name} with confidence {confidence:.3f} at bbox [{x1:.1f}, {y1:.1f}, {x2:.1f}, {y2:.1f}]"
+                )
 
                 detections.append(
                     Detection(
@@ -283,17 +285,28 @@ def detect_cracks(image: np.ndarray) -> tuple[list[Detection], float]:
                 )
 
                 # Draw bounding box on debug image
-                cv2.rectangle(debug_image, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2)
+                cv2.rectangle(
+                    debug_image, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2
+                )
                 # Draw label with class name and confidence
                 label = f"{class_name}: {confidence:.2f}"
-                cv2.putText(debug_image, label, (int(x1), int(y1) - 10),
-                           cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                cv2.putText(
+                    debug_image,
+                    label,
+                    (int(x1), int(y1) - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.5,
+                    (0, 255, 0),
+                    2,
+                )
 
         # Save debug image if there are detections
         if detections:
             debug_path = DEBUG_DIR / f"cracks_debug_{uuid.uuid4().hex}.jpg"
             cv2.imwrite(str(debug_path), debug_image)
-            logger.info(f"Saved debug image with {len(detections)} detections to {debug_path}")
+            logger.info(
+                f"Saved debug image with {len(detections)} detections to {debug_path}"
+            )
         else:
             logger.info("No crack detections found in this image")
 
@@ -308,7 +321,9 @@ def detect_cracks(image: np.ndarray) -> tuple[list[Detection], float]:
 
 def classify_signs(image: np.ndarray) -> tuple[list[Detection], float]:
     if not models_status["signs_classifier"] or signs_classifier is None:
-        raise HTTPException(status_code=503, detail="Класифікатор знаків не завантажено")
+        raise HTTPException(
+            status_code=503, detail="Класифікатор знаків не завантажено"
+        )
     if not models_status["sign_detector"] or sign_detector is None:
         raise HTTPException(status_code=503, detail="Детектор знаків не завантажено")
 
@@ -324,9 +339,7 @@ def classify_signs(image: np.ndarray) -> tuple[list[Detection], float]:
         yolo_results = sign_detector.predict(source=image, device=DEVICE, verbose=True)
 
         for result in yolo_results:
-            logger.info(
-                f"YOLO found {len(result.boxes)} objects!"
-            )
+            logger.info(f"YOLO found {len(result.boxes)} objects!")
 
             for box in result.boxes:
                 class_id_yolo = int(box.cls[0].item())
@@ -391,20 +404,31 @@ def classify_signs(image: np.ndarray) -> tuple[list[Detection], float]:
                 cv2.rectangle(debug_image, (x1, y1), (x2, y2), (255, 0, 0), 2)
                 # Draw label with class name and confidence
                 label = f"{class_name}: {confidence_value:.2f}"
-                cv2.putText(debug_image, label, (x1, y1 - 10),
-                           cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
+                cv2.putText(
+                    debug_image,
+                    label,
+                    (x1, y1 - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.5,
+                    (255, 0, 0),
+                    2,
+                )
 
         # Save debug image if there are detections
         if detections:
             debug_path = DEBUG_DIR / f"signs_debug_{uuid.uuid4().hex}.jpg"
             cv2.imwrite(str(debug_path), debug_image)
-            logger.info(f"Saved debug image with {len(detections)} detections to {debug_path}")
+            logger.info(
+                f"Saved debug image with {len(detections)} detections to {debug_path}"
+            )
 
         return detections, 0.0
 
     except Exception as e:
         logger.error(f"Error in sign classification: {e}")
-        raise HTTPException(status_code=500, detail=f"Помилка при класифікації знаків: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Помилка при класифікації знаків: {str(e)}"
+        )
 
 
 # Routes
@@ -446,7 +470,9 @@ async def detect_cracks_endpoint(file: UploadFile = File(...)):
         raise
     except Exception as e:
         logger.error(f"Error processing image: {e}")
-        raise HTTPException(status_code=500, detail=f"Помилка обробки зображення: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Помилка обробки зображення: {str(e)}"
+        )
 
 
 @app.post("/classify/signs", response_model=ProcessingResult)
@@ -472,7 +498,9 @@ async def classify_signs_endpoint(file: UploadFile = File(...)):
         raise
     except Exception as e:
         logger.error(f"Error processing image: {e}")
-        raise HTTPException(status_code=500, detail=f"Помилка обробки зображення: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Помилка обробки зображення: {str(e)}"
+        )
 
 
 @app.post("/process/all", response_model=dict)
@@ -514,7 +542,9 @@ async def process_all_models(file: UploadFile = File(...)):
 
     except Exception as e:
         logger.error(f"Error processing image: {e}")
-        raise HTTPException(status_code=500, detail=f"Помилка обробки зображення: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Помилка обробки зображення: {str(e)}"
+        )
 
 
 @app.get("/")
