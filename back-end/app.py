@@ -312,6 +312,8 @@ def classify_signs(image: np.ndarray) -> tuple[list[Detection], float]:
     if not models_status["sign_detector"] or sign_detector is None:
         raise HTTPException(status_code=503, detail="Детектор знаків не завантажено")
 
+    CLASSIFICATION_CONFIDENCE_THRESHOLD = 0.5
+
     try:
         detections = []
 
@@ -324,14 +326,9 @@ def classify_signs(image: np.ndarray) -> tuple[list[Detection], float]:
         for result in yolo_results:
             logger.info(
                 f"YOLO found {len(result.boxes)} objects!"
-            )  # Дивимось у консоль
+            )
 
             for box in result.boxes:
-                # ТИМЧАСОВО ЗАКРИВАЄМО ФІЛЬТР, щоб у CNN летіли ВСІ знайдені об'єкти (знак, дерева тощо)
-                class_id_yolo = int(box.cls[0].item())
-                if class_id_yolo != 11:
-                    continue
-
                 x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
 
                 margin = 10
@@ -369,15 +366,19 @@ def classify_signs(image: np.ndarray) -> tuple[list[Detection], float]:
                 probabilities = torch.softmax(output, dim=1)[0]
                 confidence, class_id = torch.max(probabilities, dim=0)
                 class_id_int = int(class_id.item())
+                confidence_value = confidence.item()
 
-                class_name = GTSRB_CLASSES.get(
-                    class_id_int, f"Невідомий клас {class_id_int}"
-                )
+                if confidence_value >= CLASSIFICATION_CONFIDENCE_THRESHOLD:
+                    class_name = GTSRB_CLASSES.get(
+                        class_id_int, f"Невідомий клас {class_id_int}"
+                    )
+                else:
+                    class_name = "Невідомий знак"
 
                 detections.append(
                     Detection(
                         class_name=class_name,
-                        confidence=confidence.item(),
+                        confidence=confidence_value,
                         bbox={"x1": x1, "y1": y1, "x2": x2, "y2": y2},
                     )
                 )
@@ -385,7 +386,7 @@ def classify_signs(image: np.ndarray) -> tuple[list[Detection], float]:
                 # Draw bounding box on debug image
                 cv2.rectangle(debug_image, (x1, y1), (x2, y2), (255, 0, 0), 2)
                 # Draw label with class name and confidence
-                label = f"{class_name}: {confidence.item():.2f}"
+                label = f"{class_name}: {confidence_value:.2f}"
                 cv2.putText(debug_image, label, (x1, y1 - 10),
                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
 
