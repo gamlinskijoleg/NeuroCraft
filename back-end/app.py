@@ -329,6 +329,10 @@ def classify_signs(image: np.ndarray) -> tuple[list[Detection], float]:
             )
 
             for box in result.boxes:
+                class_id_yolo = int(box.cls[0].item())
+                if class_id_yolo != 11:
+                    continue
+
                 x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
 
                 margin = 10
