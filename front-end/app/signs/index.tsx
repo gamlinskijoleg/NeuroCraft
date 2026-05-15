@@ -1,13 +1,12 @@
-import { DetectionScreen } from "./DetectionScreen";
-import { API_ENDPOINTS } from "../config";
+import { API_ENDPOINTS } from "../constants/config";
+import DetectionScreen from "../components/DetectionScreen";
 
 export default function TrafficSignsScreen() {
     return (
         <DetectionScreen
             config={{
                 title: "Дорожні знаки",
-                description:
-                    "Розпізнавання та класифікація дорожніх знаків",
+                description: "Розпізнавання та класифікація дорожніх знаків",
                 endpoint: API_ENDPOINTS.CLASSIFY_SIGNS,
                 defaultClassName: "Sign",
                 scanButtonColor: "#1E90FF",

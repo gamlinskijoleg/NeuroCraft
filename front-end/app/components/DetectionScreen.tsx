@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { API_BASE, API_ENDPOINTS } from "../config";
+import { API_BASE } from "../constants/config";
 
 const BACKEND_MAX_DIMENSION = 1024;
 const MIN_DRAW_CONFIDENCE = 0.5;
@@ -21,7 +21,10 @@ const MIN_DRAW_CONFIDENCE = 0.5;
 type ApiDetection = {
     class_name?: string;
     confidence: number;
-    bbox?: number[] | { x: number; y: number; w: number; h: number } | { x1: number; y1: number; x2: number; y2: number };
+    bbox?:
+        | number[]
+        | { x: number; y: number; w: number; h: number }
+        | { x1: number; y1: number; x2: number; y2: number };
 };
 
 type ApiSingleResponse = {
@@ -43,7 +46,7 @@ type DetectionScreenConfig = {
 };
 
 const normalizeBbox = (
-    bbox: ApiDetection["bbox"]
+    bbox: ApiDetection["bbox"],
 ): { x: number; y: number; w: number; h: number } | undefined => {
     if (!bbox) return undefined;
 
@@ -69,7 +72,7 @@ const getBackendInputSize = (natural: { w: number; h: number }) => {
     const scale = Math.min(
         BACKEND_MAX_DIMENSION / natural.w,
         BACKEND_MAX_DIMENSION / natural.h,
-        1
+        1,
     );
     return {
         w: natural.w * scale,
@@ -77,7 +80,11 @@ const getBackendInputSize = (natural: { w: number; h: number }) => {
     };
 };
 
-export function DetectionScreen({ config }: { config: DetectionScreenConfig }) {
+export default function DetectionScreen({
+    config,
+}: {
+    config: DetectionScreenConfig;
+}) {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -87,15 +94,20 @@ export function DetectionScreen({ config }: { config: DetectionScreenConfig }) {
         Array<{ class_name: string; confidence: number }>
     >([]);
     const [detections, setDetections] = useState<
-        Array<{ class_name: string; confidence: number; bbox?: { x: number; y: number; w: number; h: number } }>
+        Array<{
+            class_name: string;
+            confidence: number;
+            bbox?: { x: number; y: number; w: number; h: number };
+        }>
     >([]);
     const [imageNaturalSize, setImageNaturalSize] = useState<{
         w: number;
         h: number;
     } | null>(null);
-    const [imageLayout, setImageLayout] = useState<{ w: number; h: number } | null>(
-        null
-    );
+    const [imageLayout, setImageLayout] = useState<{
+        w: number;
+        h: number;
+    } | null>(null);
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
     const pickImage = async () => {
@@ -118,7 +130,7 @@ export function DetectionScreen({ config }: { config: DetectionScreenConfig }) {
         Image.getSize(
             asset.uri,
             (w, h) => setImageNaturalSize({ w, h }),
-            () => setImageNaturalSize(null)
+            () => setImageNaturalSize(null),
         );
         setDetections([]);
         setRows([]);
@@ -160,12 +172,15 @@ export function DetectionScreen({ config }: { config: DetectionScreenConfig }) {
             const data = JSON.parse(text) as ApiSingleResponse;
 
             if (!res.ok || !data.success) {
-                throw new Error(data.message || `Request failed (${res.status})`);
+                throw new Error(
+                    data.message || `Request failed (${res.status})`,
+                );
             }
 
-            const parsedRows: Array<{ class_name: string; confidence: number }> = (
-                data.detections ?? []
-            ).map((d) => ({
+            const parsedRows: Array<{
+                class_name: string;
+                confidence: number;
+            }> = (data.detections ?? []).map((d) => ({
                 class_name: d.class_name ?? config.defaultClassName,
                 confidence: d.confidence,
             }));
@@ -363,7 +378,10 @@ export function DetectionScreen({ config }: { config: DetectionScreenConfig }) {
                 showsVerticalScrollIndicator={true}
             >
                 <View style={styles.headerContainer}>
-                    <Pressable onPress={() => router.back()} style={styles.backButton}>
+                    <Pressable
+                        onPress={() => router.back()}
+                        style={styles.backButton}
+                    >
                         <Ionicons name="arrow-back" size={24} color="#1A2343" />
                     </Pressable>
                     <Text style={styles.brand}>{config.title}</Text>
@@ -371,7 +389,11 @@ export function DetectionScreen({ config }: { config: DetectionScreenConfig }) {
                 </View>
 
                 <View style={styles.descriptionBox}>
-                    <Ionicons name="information-circle" size={20} color="#1A2241" />
+                    <Ionicons
+                        name="information-circle"
+                        size={20}
+                        color="#1A2241"
+                    />
                     <Text style={styles.description}>{config.description}</Text>
                 </View>
 
@@ -384,53 +406,73 @@ export function DetectionScreen({ config }: { config: DetectionScreenConfig }) {
                                 styles.imagePreview,
                                 imageNaturalSize
                                     ? {
-                                        aspectRatio: imageNaturalSize.w / imageNaturalSize.h,
-                                    }
+                                          aspectRatio:
+                                              imageNaturalSize.w /
+                                              imageNaturalSize.h,
+                                      }
                                     : null,
                             ]}
                             onLayout={(ev) => {
-                                const { width: w, height: h } = ev.nativeEvent.layout;
+                                const { width: w, height: h } =
+                                    ev.nativeEvent.layout;
                                 setImageLayout({ w, h });
                             }}
                         />
-                        {imageNaturalSize && imageLayout && detections.length > 0 && (
-                            <View style={StyleSheet.absoluteFill} pointerEvents="none">
-                                {detections.map((det, idx) => {
-                                    if (
-                                        !det.bbox ||
-                                        det.confidence <= MIN_DRAW_CONFIDENCE
-                                    )
-                                        return null;
-                                    const backendSize = getBackendInputSize(imageNaturalSize);
-                                    const scaleX = imageLayout.w / backendSize.w;
-                                    const scaleY = imageLayout.h / backendSize.h;
-                                    const left = det.bbox.x * scaleX;
-                                    const top = det.bbox.y * scaleY;
-                                    const boxW = det.bbox.w * scaleX;
-                                    const boxH = det.bbox.h * scaleY;
-                                    return (
-                                        <View
-                                            key={`box-${idx}`}
-                                            style={{
-                                                position: "absolute",
-                                                left,
-                                                top,
-                                                width: boxW,
-                                                height: boxH,
-                                                borderWidth: 2,
-                                                borderColor: config.bboxColor.border,
-                                                backgroundColor: config.bboxColor.bg,
-                                            }}
-                                        />
-                                    );
-                                })}
-                            </View>
-                        )}
+                        {imageNaturalSize &&
+                            imageLayout &&
+                            detections.length > 0 && (
+                                <View
+                                    style={StyleSheet.absoluteFill}
+                                    pointerEvents="none"
+                                >
+                                    {detections.map((det, idx) => {
+                                        if (
+                                            !det.bbox ||
+                                            det.confidence <=
+                                                MIN_DRAW_CONFIDENCE
+                                        )
+                                            return null;
+                                        const backendSize =
+                                            getBackendInputSize(
+                                                imageNaturalSize,
+                                            );
+                                        const scaleX =
+                                            imageLayout.w / backendSize.w;
+                                        const scaleY =
+                                            imageLayout.h / backendSize.h;
+                                        const left = det.bbox.x * scaleX;
+                                        const top = det.bbox.y * scaleY;
+                                        const boxW = det.bbox.w * scaleX;
+                                        const boxH = det.bbox.h * scaleY;
+                                        return (
+                                            <View
+                                                key={`box-${idx}`}
+                                                style={{
+                                                    position: "absolute",
+                                                    left,
+                                                    top,
+                                                    width: boxW,
+                                                    height: boxH,
+                                                    borderWidth: 2,
+                                                    borderColor:
+                                                        config.bboxColor.border,
+                                                    backgroundColor:
+                                                        config.bboxColor.bg,
+                                                }}
+                                            />
+                                        );
+                                    })}
+                                </View>
+                            )}
                         <Pressable
                             style={styles.removeImageButton}
                             onPress={() => setSelectedImage(null)}
                         >
-                            <Ionicons name="close-circle" size={24} color="#fff" />
+                            <Ionicons
+                                name="close-circle"
+                                size={24}
+                                color="#fff"
+                            />
                         </Pressable>
                     </View>
                 )}
@@ -438,14 +480,18 @@ export function DetectionScreen({ config }: { config: DetectionScreenConfig }) {
                 <Pressable style={styles.uploadBtn} onPress={pickImage}>
                     <Ionicons name="cloud-upload" size={20} color="#1A2241" />
                     <Text style={styles.uploadBtnText}>
-                        {selectedImage ? "Змінити зображення" : "Завантажити зображення"}
+                        {selectedImage
+                            ? "Змінити зображення"
+                            : "Завантажити зображення"}
                     </Text>
                 </Pressable>
 
                 <Pressable
                     style={[
                         styles.scanBtn,
-                        !selectedImage || loading ? styles.scanBtnDisabled : null,
+                        !selectedImage || loading
+                            ? styles.scanBtnDisabled
+                            : null,
                     ]}
                     onPress={performScan}
                     disabled={!selectedImage || loading}
@@ -455,28 +501,38 @@ export function DetectionScreen({ config }: { config: DetectionScreenConfig }) {
                     ) : (
                         <>
                             <Ionicons name="scan" size={20} color="#fff" />
-                            <Text style={styles.scanBtnText}>Почати сканування</Text>
+                            <Text style={styles.scanBtnText}>
+                                Почати сканування
+                            </Text>
                         </>
                     )}
                 </Pressable>
 
                 {error != null ? (
                     <View style={styles.errorBox}>
-                        <Ionicons name="alert-circle" size={16} color="#A23F3F" />
+                        <Ionicons
+                            name="alert-circle"
+                            size={16}
+                            color="#A23F3F"
+                        />
                         <Text style={styles.errorText}>{error}</Text>
                     </View>
                 ) : null}
 
                 {message != null && (
                     <View style={styles.recentWrap}>
-                        <Text style={styles.recentTitle}>Результати сканування</Text>
+                        <Text style={styles.recentTitle}>
+                            Результати сканування
+                        </Text>
                         <View style={styles.resultCard}>
                             <Text style={styles.resultTitle}>{message}</Text>
                             <Text style={styles.resultMeta}>
                                 {config.title} • {rows.length} виявлень
                             </Text>
                             {modelUsed != null ? (
-                                <Text style={styles.resultMeta}>Модель: {modelUsed}</Text>
+                                <Text style={styles.resultMeta}>
+                                    Модель: {modelUsed}
+                                </Text>
                             ) : null}
                             <View style={styles.detectionsList}>
                                 {rows.map((row, i) => (

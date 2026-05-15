@@ -1,5 +1,5 @@
-import { DetectionScreen } from "./DetectionScreen";
-import { API_ENDPOINTS } from "../config";
+import DetectionScreen from "../components/DetectionScreen";
+import { API_ENDPOINTS } from "../constants/config";
 
 export default function RoadDamageScreen() {
     return (

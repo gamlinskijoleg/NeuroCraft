@@ -46,3 +46,5 @@ export const API_URLS = {
     CLASSIFY_SIGNS: `${API_BASE}${API_ENDPOINTS.CLASSIFY_SIGNS}`,
     PROCESS_ALL: `${API_BASE}${API_ENDPOINTS.PROCESS_ALL}`,
 } as const;
+
+export default {};

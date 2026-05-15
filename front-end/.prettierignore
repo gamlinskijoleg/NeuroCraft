@@ -1,0 +1,16 @@
+node_modules
+dist
+build
+android
+.expo
+ios
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+*.DS_Store
+*.env.*
+!.env.example
+package-lock.json
+yarn.lock
