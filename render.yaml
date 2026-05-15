@@ -1,7 +1,7 @@
 services:
   - type: web
     name: neurocraft-backend
-    runtime: python-3.11
+    runtime: python
     buildCommand: |
       pip install --upgrade pip setuptools wheel
       pip install -r back-end/requirements-render.txt
