@@ -199,7 +199,7 @@ def load_models():
                 raise ImportError("ultralytics is not installed")
             # Для тесту використовуємо базову модель.
             # Пізніше заміниш на MODELS_DIR / "yolov8_signs.pt"
-            sign_detector = YOLO("yolov8n.pt")
+            sign_detector = YOLO(MODELS_DIR / "yolov8n.pt")
             models_status["sign_detector"] = True
             logger.info("✓ Sign detector (YOLO) loaded successfully")
         except Exception as e:
