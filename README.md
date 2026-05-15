@@ -60,6 +60,8 @@ npm install
 npm start
 ```
 
+Use `npm start` / `npm run android` / `npm run web` from inside `front-end/` so Expo resolves the local `expo-router` package correctly. Avoid running the global `expo` command directly from PowerShell on this repo.
+
 Then press `i` / `a` / `w` in the terminal for iOS simulator, Android emulator, or web (Expo will prompt as usual).
 
 ### Pointing the app at your API
@@ -104,6 +106,7 @@ Release builds must set `EXPO_PUBLIC_API_URL`; in production without it, the app
 |--------|------|-------------|
 | GET | `/` | Short JSON with links to docs |
 | GET | `/health` | Status and which models loaded |
+| GET | `/markers` | Sample road markers for map testing |
 | POST | `/detect/cracks` | Multipart image → crack detections |
 | POST | `/classify/signs` | Multipart image → sign pipeline |
 | POST | `/process/all` | Multipart image → cracks + signs (used by the app) |

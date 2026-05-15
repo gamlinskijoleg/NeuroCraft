@@ -151,6 +151,15 @@ class HealthResponse(BaseModel):
     models_loaded: dict
 
 
+class RoadMarker(BaseModel):
+    id: str
+    latitude: float
+    longitude: float
+    title: str
+    description: str
+    severity: int = 1
+
+
 # Global model variables
 models_status = {
     "cracks_detector": False,
@@ -447,6 +456,37 @@ async def health_check():
     return HealthResponse(status="healthy", models_loaded=models_status)
 
 
+@app.get("/markers", response_model=list[RoadMarker])
+async def get_markers():
+    """Return sample bad-road markers for frontend testing"""
+    return [
+        RoadMarker(
+            id="marker-1",
+            latitude=50.4501,
+            longitude=30.5234,
+            title="Pothole",
+            description="Sample pothole marker for map testing",
+            severity=3,
+        ),
+        RoadMarker(
+            id="marker-2",
+            latitude=50.4547,
+            longitude=30.5238,
+            title="Crack",
+            description="Sample crack marker for map testing",
+            severity=2,
+        ),
+        RoadMarker(
+            id="marker-3",
+            latitude=50.4486,
+            longitude=30.5361,
+            title="Road Work",
+            description="Sample road work marker for map testing",
+            severity=1,
+        ),
+    ]
+
+
 @app.post("/detect/cracks", response_model=ProcessingResult)
 async def detect_cracks_endpoint(file: UploadFile = File(...)):
     """
@@ -556,6 +596,7 @@ async def root():
         "docs": "/docs",
         "endpoints": {
             "health": "/health",
+            "markers": "/markers",
             "detect_cracks": "/detect/cracks",
             "classify_signs": "/classify/signs",
             "process_all": "/process/all",
