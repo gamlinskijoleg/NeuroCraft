@@ -1,3 +1,4 @@
+import logging
 import re
 from datetime import datetime
 from pathlib import Path
@@ -29,6 +30,8 @@ def save_debug_image(
     details: Optional[str] = None,
 ) -> Path:
     if not SAVE_DEBUG_ARTIFACTS:
+        logger = logging.getLogger(__name__)
+        logger.info("Debug artifacts saving is disabled. Skipping save.")
         return DEBUG_DIR / "disabled.jpg"
 
     DEBUG_DIR.mkdir(exist_ok=True)
