@@ -1,7 +1,7 @@
 name: Sync Back-end to Hugging Face
 on:
   push:
-    branches: [ main ] # Change to master if your default branch is master
+    branches: [ main ]
 
 jobs:
   deploy:
@@ -10,7 +10,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Fetches all history so subtree pushing works seamlessly
+          fetch-depth: 0
+          lfs: true # Вмикаємо підтримку LFS для завантаження файлів з GitHub
 
       - name: Push Back-end subdirectory to Hugging Face Root
         env:
@@ -20,12 +21,19 @@ jobs:
           git config --global user.email "gamlinskijoleg@example.com"
           git config --global user.name "gamlinskijoleg"
 
-          # 2. Додаємо Hugging Face як remote
+          # 2. Ініціалізація та налаштування Git LFS всередині раннера
+          git lfs install
+          git lfs track "*.pt"
+          git lfs track "*.pth"
+
+          # 3. Додаємо Hugging Face як remote
           git remote add hf https://gamlinskijoleg:$HF_TOKEN@huggingface.co/spaces/gamlinskijoleg/Easyroad
 
-          # 3. Розщеплюємо історію: створюємо локальну тимчасову гілку 'deploy-branch',
-          # яка містить ЛИШЕ вміст папки back-end
+          # 4. Створюємо тимчасову гілку з вмістом папки back-end
           git subtree split --prefix back-end -b deploy-branch
 
-          # 4. Робимо ЖОРСТКИЙ пуш цієї тимчасової гілки в гілку main на Hugging Face
+          # 5. Перемикаємось на тимчасову гілку, щоб переконатися, що LFS підхопить атрибути
+          git checkout deploy-branch
+
+          # 6. Робимо ЖОРСТКИЙ пуш з увімкненим LFS на Hugging Face
           git push hf deploy-branch:main --force
