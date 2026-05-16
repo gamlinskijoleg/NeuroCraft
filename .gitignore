@@ -36,9 +36,6 @@ coverage.xml
 # Backend (weights & runtime artifacts)
 back-end/venv/
 back-end/debug_crops/
-back-end/models/*.pt
-back-end/models/*.pth
-back-end/models/*.onnx
 
 # Node / Expo / React Native
 node_modules/
