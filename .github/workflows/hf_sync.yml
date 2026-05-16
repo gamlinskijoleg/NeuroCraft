@@ -21,7 +21,7 @@ jobs:
           git config --global user.email "gamlinskijoleg@example.com"
           git config --global user.name "gamlinskijoleg"
 
-          # 2. Ініціалізація та налаштування Git LFS всередині раннера
+          # 2. Ініціалізація та налаштування Git LFS
           git lfs install
           git lfs track "*.pt"
           git lfs track "*.pth"
@@ -32,8 +32,8 @@ jobs:
           # 4. Створюємо тимчасову гілку з вмістом папки back-end
           git subtree split --prefix back-end -b deploy-branch
 
-          # 5. Перемикаємось на тимчасову гілку, щоб переконатися, що LFS підхопить атрибути
-          git checkout deploy-branch
+          # 5. ПРИМУСОВО (-f) перемикаємось на тимчасову гілку, ігноруючи незакомічений .gitattributes
+          git checkout -f deploy-branch
 
-          # 6. Робимо ЖОРСТКИЙ пуш з увімкненим LFS на Hugging Face
+          # 6. Робимо жорсткий пуш на Hugging Face
           git push hf deploy-branch:main --force
