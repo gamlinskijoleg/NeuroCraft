@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import { WebView } from "react-native-webview";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { API_BASE } from "../constants/config";
+import { API_BASE } from "../../src/constants/config";
 
 type MarkerItem = {
     id: string | number;

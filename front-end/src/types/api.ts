@@ -1,6 +1,3 @@
-/**
- * API Response Types
- */
 export type ApiDetection = {
     class_name?: string;
     confidence: number;
@@ -18,9 +15,6 @@ export type ApiSingleResponse = {
     processing_time?: number;
 };
 
-/**
- * Screen Configuration Types
- */
 export type DetectionScreenConfig = {
     title: string;
     description: string;
@@ -30,5 +24,3 @@ export type DetectionScreenConfig = {
     bboxColor: { border: string; bg: string };
     descriptionBgColor: string;
 };
-
-export default {};

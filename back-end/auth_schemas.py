@@ -1,22 +1,12 @@
 from datetime import datetime
+from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 
 class RegisterRequest(BaseModel):
     email: EmailStr
-    username: str = Field(min_length=3, max_length=32)
     password: str = Field(min_length=8, max_length=128)
-
-    @field_validator("username")
-    @classmethod
-    def validate_username(cls, value: str) -> str:
-        cleaned = value.strip()
-        if not cleaned:
-            raise ValueError("Username is required")
-        if not cleaned.replace("_", "").isalnum():
-            raise ValueError("Username can contain letters, numbers, and underscores")
-        return cleaned
 
     @field_validator("password")
     @classmethod
@@ -36,7 +26,7 @@ class UserPublic(BaseModel):
 
     id: str
     email: EmailStr
-    username: str
+    username: Optional[str] = None
     is_active: bool
     created_at: datetime
 

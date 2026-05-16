@@ -135,10 +135,6 @@ def _normalize_email(email: str) -> str:
     return email.strip().lower()
 
 
-def _normalize_username(username: str) -> str:
-    return username.strip().lower()
-
-
 def _to_user_public(user_doc: dict) -> UserPublic:
     return UserPublic(
         id=user_doc["_id"],
@@ -496,12 +492,10 @@ async def register_account(payload: RegisterRequest):
     users = get_users_collection()
     now = datetime.now(timezone.utc)
     normalized_email = _normalize_email(str(payload.email))
-    normalized_username = _normalize_username(payload.username)
 
     user_doc = {
         "_id": str(uuid4()),
         "email": normalized_email,
-        "username": normalized_username,
         "password_hash": hash_password(payload.password),
         "is_active": True,
         "created_at": now,
@@ -513,7 +507,7 @@ async def register_account(payload: RegisterRequest):
     except DuplicateKeyError:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Email or username is already in use",
+            detail="Email is already in use",
         )
 
     token = create_access_token(subject=user_doc["_id"])
@@ -528,9 +522,7 @@ async def register_account(payload: RegisterRequest):
 async def login_account(payload: LoginRequest):
     users = get_users_collection()
     identifier = payload.identifier.strip().lower()
-    user_doc = await users.find_one(
-        {"$or": [{"email": identifier}, {"username": identifier}]}
-    )
+    user_doc = await users.find_one({"email": identifier})
 
     if user_doc is None or not verify_password(
         payload.password, user_doc.get("password_hash", "")

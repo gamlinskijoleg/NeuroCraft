@@ -30,9 +30,6 @@ async def connect_to_mongo() -> None:
     await users.create_indexes(
         [
             IndexModel([("email", ASCENDING)], unique=True, name="uq_users_email"),
-            IndexModel(
-                [("username", ASCENDING)], unique=True, name="uq_users_username"
-            ),
         ]
     )
 

@@ -14,7 +14,7 @@
         },
         "ios": {
             "supportsTablet": true,
-            "bundleIdentifier": "com.anonymous.frontend",
+            "bundleIdentifier": "com.neuroctaft.frontend",
             "runtimeVersion": {
                 "policy": "appVersion"
             }
@@ -25,7 +25,7 @@
                 "backgroundImage": "./assets/images/android-icon-background.png",
                 "monochromeImage": "./assets/images/android-icon-monochrome.png"
             },
-            "package": "com.anonymous.frontend",
+            "package": "com.neuroctaft.frontend",
             "permissions": ["android.permission.RECORD_AUDIO"],
             "runtimeVersion": "1.0.0"
         },
@@ -43,7 +43,6 @@
             "reactCompiler": true
         },
         "extra": {
-            "API_URL": "https://gamlinskijoleg-easyroad.hf.space/",
             "router": {},
             "eas": {
                 "projectId": "8bed685c-c142-47ce-8a45-b9e3518c797d"
