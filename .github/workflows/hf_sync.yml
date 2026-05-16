@@ -11,29 +11,38 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          lfs: true # Вмикаємо підтримку LFS для завантаження файлів з GitHub
+          lfs: true
 
-      - name: Push Back-end subdirectory to Hugging Face Root
+      - name: Deploy Back-end to Hugging Face
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          # 1. Налаштування користувача Git
-          git config --global user.email "gamlinskijoleg@example.com"
-          git config --global user.name "gamlinskijoleg"
+          # 1. Встановлюємо та запускаємо LFS у системі раннера
+          git lfs install
 
-          # 2. Ініціалізація та налаштування Git LFS
+          # 2. Створюємо тимчасову папку поза межами поточного гіт-проєкту
+          mkdir ../hf_deploy
+
+          # 3. Копіюємо ВМІСТ папки back-end у тимчасову папку
+          cp -r back-end/* ../hf_deploy/
+
+          # 4. Переходимо в тимчасову папку і робимо з неї абсолютно новий гіт-репозиторій
+          cd ../hf_deploy
+          git init
+
+          # 5. Налаштовуємо користувача
+          git config user.email "gamlinskijoleg@example.com"
+          git config user.name "gamlinskijoleg"
+
+          # 6. ОБО'В'ЯЗКОВО налаштовуємо LFS трекінг для ЦЬОГО НОВОГО репозиторію ДО додавання файлів
           git lfs install
           git lfs track "*.pt"
           git lfs track "*.pth"
 
-          # 3. Додаємо Hugging Face як remote
+          # 7. Додаємо всі файли (тепер великі моделі точно індексуються як LFS)
+          git add .
+          git commit -m "Deploy back-end assets via CI/CD"
+
+          # 8. Пушимо цей чистий репозиторій прямо в main на Hugging Face
           git remote add hf https://gamlinskijoleg:$HF_TOKEN@huggingface.co/spaces/gamlinskijoleg/Easyroad
-
-          # 4. Створюємо тимчасову гілку з вмістом папки back-end
-          git subtree split --prefix back-end -b deploy-branch
-
-          # 5. ПРИМУСОВО (-f) перемикаємось на тимчасову гілку, ігноруючи незакомічений .gitattributes
-          git checkout -f deploy-branch
-
-          # 6. Робимо жорсткий пуш на Hugging Face
-          git push hf deploy-branch:main --force
+          git push hf master:main --force  # або main:main, залежно від того, яку дефолтну гілку створить git init (зазвичай master)
