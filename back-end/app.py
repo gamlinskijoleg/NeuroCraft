@@ -126,59 +126,44 @@ def load_models():
             logger.info("✓ Cracks detector (YOLO11) loaded successfully")
         except Exception as e:
             logger.warning(f"Could not load cracks detector: {e}")
-            logger.warning(
-                "УВАГА: Оновіть ultralytics до >= 8.3.50 у вашому requirements.txt"
-            )
             models_status["cracks_detector"] = False
-    else:
-        logger.warning(f"Файл cracks.pt відсутній у {cracks_path}")
-        models_status["cracks_detector"] = False
 
-    # 2. Завантаження детектора знаків (Базова YOLO для пошуку об'єктів)
+    # 2. ЗАВАНТАЖЕННЯ ОФІЦІЙНОЇ GOOGLE OPENIMAGES МОДЕЛІ
     try:
         if YOLO is None:
             raise ImportError("ultralytics не встановлено")
-        sign_detector = YOLO(MODELS_DIR / "yolov8n.pt")
+
+        sign_detector = YOLO(MODELS_DIR / "yolov8m-oiv7.pt")
         models_status["sign_detector"] = True
-        logger.info("✓ Sign detector (YOLO) loaded successfully")
+        logger.info("✓ Google OpenImages Traffic Sign detector loaded successfully")
     except Exception as e:
         logger.warning(f"Could not load sign detector: {e}")
         models_status["sign_detector"] = False
 
-    # 3. Завантаження класифікатора знаків (ResNet50 з вашого навчання)
-    signs_path = MODELS_DIR / "signs_classificator.pth"  # або "mtsd_perfect_model.pth"
+    # 3. Завантаження твого класифікатора знаків (ResNet50)
+    signs_path = MODELS_DIR / "signs_classificator.pth"
     if signs_path.exists():
         try:
-            # Завантажуємо файл збереження
             checkpoint = torch.load(signs_path, map_location="cpu", weights_only=False)
+            state_dict = (
+                checkpoint["model_state"]
+                if isinstance(checkpoint, dict) and "model_state" in checkpoint
+                else checkpoint
+            )
+            dynamic_labels = (
+                checkpoint.get("labels", None) if isinstance(checkpoint, dict) else None
+            )
 
-            if isinstance(checkpoint, dict) and "model_state" in checkpoint:
-                state_dict = checkpoint["model_state"]
-                dynamic_labels = checkpoint.get("labels", None)
-                logger.info(
-                    f"✓ Знайдено метадані моделі. Кількість класів: {len(dynamic_labels) if dynamic_labels else 'невідомо'}"
-                )
-            else:
-                state_dict = checkpoint
-                logger.warning(
-                    "Попередження: у файлі .pth немає словника метаданих, завантажено чистий state_dict"
-                )
-
-            # Динамічно визначаємо кількість вихідних класів
-            # Останній шар ResNet50 називається fc.bias, беремо його розмірність
             num_classes = (
                 state_dict["fc.1.bias"].shape[0]
                 if "fc.1.bias" in state_dict
                 else state_dict["fc.bias"].shape[0]
             )
 
-            # Будуємо ТОЧНО таку ж архітектуру, як у скрипті навчання:
-            # ResNet50 -> Dropout(0.3) -> Linear(num_ftrs, len_classes)
             model = models.resnet50(weights=None)
             num_ftrs = model.fc.in_features
             model.fc = nn.Sequential(nn.Dropout(0.3), nn.Linear(num_ftrs, num_classes))
 
-            # Завантажуємо ваги у правильну архітектуру
             model.load_state_dict(state_dict)
             model.to(DEVICE)
             model.eval()
@@ -189,9 +174,6 @@ def load_models():
         except Exception as e:
             logger.warning(f"Could not load signs classifier: {e}")
             models_status["signs_classifier"] = False
-    else:
-        logger.warning(f"Файл класифікатора відсутній у {signs_path}")
-        models_status["signs_classifier"] = False
 
     logger.info(f"Статус моделей: {models_status}")
 
@@ -220,6 +202,9 @@ def detect_cracks(image: np.ndarray) -> tuple[list[Detection], float]:
 
         for result in results:
             boxes = result.boxes
+            if boxes is None or len(boxes) == 0:
+                logger.info("No cracks detected in the image.")
+                continue
             for box in boxes:
                 x1, y1, x2, y2 = box.xyxy[0].tolist()
                 confidence = box.conf[0].item()
@@ -253,7 +238,7 @@ def detect_cracks(image: np.ndarray) -> tuple[list[Detection], float]:
 def classify_signs(image: np.ndarray) -> tuple[list[Detection], float]:
     if not models_status["signs_classifier"] or signs_classifier is None:
         raise HTTPException(
-            status_code=503, detail="Класифікатор знаків (ResNet50) не завантажено."
+            status_code=503, detail="Класифікатор знаків не завантажено."
         )
     if not models_status["sign_detector"] or sign_detector is None:
         raise HTTPException(
@@ -265,16 +250,27 @@ def classify_signs(image: np.ndarray) -> tuple[list[Detection], float]:
     try:
         detections = []
         debug_image = image.copy()
+
+        # Запускаємо детекцію
         yolo_results = sign_detector.predict(source=image, device=DEVICE, verbose=True)
 
         for result in yolo_results:
+            if result.boxes is None or len(result.boxes) == 0:
+                logger.info("No signs detected in the image.")
+                continue
             for box in result.boxes:
-                class_id_yolo = int(box.cls[0].item())
+                # Отримуємо ім'я класу, який знайшла YOLO
+                class_id = int(box.cls[0].item())
+                class_name_yolo = result.names[class_id]
 
-                # УВАГА: Якщо використовуєте кастомну модель детекції знаків, змініть цей ID!
-                # Для стандартної моделі yolov8n.pt ID знаків у COCO датасеті зазвичай немає,
-                # переконайтесь що ви детектуєте саме потрібний об'єкт.
-                if class_id_yolo != 11:
+                # Нам потрібні СУТО дорожні знаки. В OpenImages цей клас називається "Traffic sign"
+                if class_name_yolo != "Traffic sign":
+                    continue
+
+                det_confidence = box.conf[0].item()
+                if (
+                    det_confidence < 0.20
+                ):  # Нижній поріг детекції, щоб не пропускати дрібні знаки
                     continue
 
                 x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
@@ -291,7 +287,7 @@ def classify_signs(image: np.ndarray) -> tuple[list[Detection], float]:
                 ):
                     continue
 
-                # Трансформація кропу під формат ResNet50 (128x128 + Нормалізація ImageNet)
+                # Передаємо кроп у твій ResNet50 класифікатор
                 crop_rgb = cv2.cvtColor(sign_crop, cv2.COLOR_BGR2RGB)
                 pil_img = Image.fromarray(crop_rgb)
                 image_tensor = sign_transforms(pil_img).unsqueeze(0).to(DEVICE)
@@ -300,8 +296,8 @@ def classify_signs(image: np.ndarray) -> tuple[list[Detection], float]:
                     output = signs_classifier(image_tensor)
 
                 probabilities = torch.softmax(output, dim=1)[0]
-                confidence, class_id = torch.max(probabilities, dim=0)
-                class_id_int = int(class_id.item())
+                confidence, class_id_resnet = torch.max(probabilities, dim=0)
+                class_id_int = int(class_id_resnet.item())
                 confidence_value = confidence.item()
 
                 if confidence_value >= CLASSIFICATION_CONFIDENCE_THRESHOLD:
@@ -339,9 +335,7 @@ def classify_signs(image: np.ndarray) -> tuple[list[Detection], float]:
         return detections, 0.0
     except Exception as e:
         logger.error(f"Помилка класифікації знаків: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"Внутрішня помилка класифікатора: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Внутрішня помилка: {str(e)}")
 
 
 @app.on_event("startup")

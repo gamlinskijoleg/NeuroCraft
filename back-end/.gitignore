@@ -44,11 +44,6 @@ debug_crops/
 .env.local
 .env.*.local
 
-# Models
-models/*.pt
-models/*.pth
-models/*.onnx
-
 # Render
 .render/
 
