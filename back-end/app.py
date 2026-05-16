@@ -1,10 +1,5 @@
 import sys
-import io
-import os
 import logging
-import re
-from datetime import datetime
-from pathlib import Path
 from typing import Optional
 
 import numpy as np
@@ -15,6 +10,10 @@ from PIL import Image
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from pydantic import BaseModel
 from torchvision import models, transforms
+
+from config import MODELS_DIR
+from debug_utils import save_debug_image
+from image_utils import process_image_to_array
 
 try:
     from ultralytics import YOLO
@@ -35,28 +34,6 @@ app = FastAPI(
     version="1.0.0",
     redirect_slashes=False,
 )
-
-# Папки
-MODELS_DIR = Path("./models")
-MODELS_DIR.mkdir(exist_ok=True)
-
-DEBUG_DIR = Path(os.getenv("DEBUG_CROPS_DIR", "./debug_crops"))
-
-
-def _env_truthy(name: str) -> bool:
-    return os.getenv(name, "false").strip().lower() in {"1", "true", "yes", "on"}
-
-
-ENVIRONMENT = os.getenv("ENVIRONMENT", "production").strip().lower()
-SAVE_DEBUG_ARTIFACTS = _env_truthy("SAVE_DEBUG_CROPS") or ENVIRONMENT in {
-    "local",
-    "development",
-    "dev",
-    "debug",
-}
-
-if SAVE_DEBUG_ARTIFACTS:
-    DEBUG_DIR.mkdir(exist_ok=True)
 
 # Класи
 CRACK_CLASSES = [
@@ -83,45 +60,6 @@ sign_transforms = transforms.Compose(
 # але залишаємо цей як резервний (запобіжник)
 GTSRB_CLASSES_BACKUP = {i: f"Клас {i}" for i in range(200)}
 dynamic_labels = None
-
-
-def _sanitize_debug_segment(value: Optional[str]) -> str:
-    if not value:
-        return "upload"
-
-    cleaned = Path(value).stem
-    cleaned = re.sub(r"[^\w]+", "_", cleaned, flags=re.UNICODE).strip("_")
-    cleaned = re.sub(r"_+", "_", cleaned)
-    return cleaned[:60] or "upload"
-
-
-def _save_debug_image(
-    image: np.ndarray,
-    *,
-    source_name: Optional[str],
-    model_name: str,
-    stage: str,
-    index: Optional[int] = None,
-    details: Optional[str] = None,
-) -> Path:
-    if not SAVE_DEBUG_ARTIFACTS:
-        return DEBUG_DIR / "disabled.jpg"
-
-    DEBUG_DIR.mkdir(exist_ok=True)
-
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]
-    parts = [timestamp, _sanitize_debug_segment(source_name), model_name, stage]
-
-    if index is not None:
-        parts.append(f"{index:02d}")
-
-    if details:
-        parts.append(_sanitize_debug_segment(details))
-
-    file_name = "__".join(parts) + ".jpg"
-    debug_path = DEBUG_DIR / file_name
-    cv2.imwrite(str(debug_path), image)
-    return debug_path
 
 
 # Моделі Pydantic
@@ -234,16 +172,6 @@ def load_models():
     logger.info(f"Статус моделей: {models_status}")
 
 
-async def process_image_to_array(
-    file: UploadFile, max_dimension: int = 1024
-) -> np.ndarray:
-    contents = await file.read()
-    image = Image.open(io.BytesIO(contents))
-    image.thumbnail((max_dimension, max_dimension), Image.Resampling.LANCZOS)
-    image_cv = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
-    return image_cv
-
-
 def detect_cracks(
     image: np.ndarray, source_name: Optional[str] = None
 ) -> tuple[list[Detection], float]:
@@ -254,7 +182,7 @@ def detect_cracks(
         )
 
     try:
-        _save_debug_image(
+        save_debug_image(
             image,
             source_name=source_name,
             model_name="cracks",
@@ -291,7 +219,7 @@ def detect_cracks(
                     debug_image, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2
                 )
 
-        _save_debug_image(
+        save_debug_image(
             debug_image,
             source_name=source_name,
             model_name="cracks",
@@ -319,7 +247,7 @@ def classify_signs(
     CLASSIFICATION_CONFIDENCE_THRESHOLD = 0.4
 
     try:
-        _save_debug_image(
+        save_debug_image(
             image,
             source_name=source_name,
             model_name="signs",
@@ -367,7 +295,7 @@ def classify_signs(
                     continue
 
                 crop_index += 1
-                _save_debug_image(
+                save_debug_image(
                     sign_crop,
                     source_name=source_name,
                     model_name="signs",
@@ -418,7 +346,7 @@ def classify_signs(
                     2,
                 )
 
-        _save_debug_image(
+        save_debug_image(
             debug_image,
             source_name=source_name,
             model_name="signs",
