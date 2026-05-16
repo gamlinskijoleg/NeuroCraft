@@ -16,12 +16,16 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          # 1. Configure git credentials
+          # 1. Налаштування користувача Git
           git config --global user.email "gamlinskijoleg@example.com"
           git config --global user.name "gamlinskijoleg"
 
-          # 2. Add Hugging Face Space as a remote destination
+          # 2. Додаємо Hugging Face як remote
           git remote add hf https://gamlinskijoleg:$HF_TOKEN@huggingface.co/spaces/gamlinskijoleg/Easyroad
 
-          # 3. Extract the 'back-end' folder and push its CONTENTS directly to the hf main branch
-          git subtree push --prefix back-end hf main
+          # 3. Розщеплюємо історію: створюємо локальну тимчасову гілку 'deploy-branch',
+          # яка містить ЛИШЕ вміст папки back-end
+          git subtree split --prefix back-end -b deploy-branch
+
+          # 4. Робимо ЖОРСТКИЙ пуш цієї тимчасової гілки в гілку main на Hugging Face
+          git push hf deploy-branch:main --force
