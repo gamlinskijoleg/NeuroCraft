@@ -66,7 +66,11 @@ dynamic_labels = None
 
 def _fuse_yolo_model(model) -> None:
     try:
-        if hasattr(model, "model") and model.model is not None and hasattr(model.model, "fuse"):
+        if (
+            hasattr(model, "model")
+            and model.model is not None
+            and hasattr(model.model, "fuse")
+        ):
             model.model.fuse()
     except Exception as e:
         logger.warning(f"Could not fuse YOLO model: {e}")
@@ -389,6 +393,37 @@ async def startup_event():
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
     return HealthResponse(status="healthy", models_loaded=models_status)
+
+
+@app.get("/markers", response_model=list[RoadMarker])
+async def get_markers():
+    """Return sample bad-road markers for frontend testing"""
+    return [
+        RoadMarker(
+            id="marker-1",
+            latitude=50.4501,
+            longitude=30.5234,
+            title="Pothole",
+            description="Sample pothole marker for map testing",
+            severity=3,
+        ),
+        RoadMarker(
+            id="marker-2",
+            latitude=50.4547,
+            longitude=30.5238,
+            title="Crack",
+            description="Sample crack marker for map testing",
+            severity=2,
+        ),
+        RoadMarker(
+            id="marker-3",
+            latitude=50.4486,
+            longitude=30.5361,
+            title="Road Work",
+            description="Sample road work marker for map testing",
+            severity=1,
+        ),
+    ]
 
 
 @app.post("/detect/cracks", response_model=ProcessingResult)
