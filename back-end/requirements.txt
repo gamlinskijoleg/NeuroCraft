@@ -1,3 +1,4 @@
+# Deployment requirements
 --extra-index-url https://download.pytorch.org/whl/cu121
 
 fastapi==0.104.1
@@ -9,6 +10,11 @@ opencv-python==4.8.1.78
 torch==2.5.1+cu121
 torchvision==0.20.1+cu121
 torchaudio==2.5.1+cu121
-# ultralytics==8.0.223
 ultralytics>=8.3.50
 pydantic==2.13.3
+motor==3.6.0
+pymongo==4.9.2
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+email-validator==2.2.0
+python-dotenv==1.0.1

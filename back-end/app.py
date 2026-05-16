@@ -1,20 +1,27 @@
 import sys
 import gc
 import logging
+from datetime import datetime, timezone
 from typing import Optional
+from uuid import uuid4
 
 import numpy as np
 import cv2
 import torch
 import torch.nn as nn
 from PIL import Image
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from pymongo.errors import DuplicateKeyError
 from pydantic import BaseModel
 from torchvision import models, transforms
 
-from config import MODELS_DIR
+from auth_schemas import LoginRequest, RegisterRequest, TokenResponse, UserPublic
+from config import ACCESS_TOKEN_EXPIRE_MINUTES, JWT_SECRET_KEY, MODELS_DIR, ENVIRONMENT
+from database import close_mongo_connection, connect_to_mongo, get_users_collection
 from debug_utils import save_debug_image
 from image_utils import process_image_to_array
+from security import create_access_token, decode_access_token, hash_password, verify_password
 from translation import mtsd_ukrainian_signs
 
 try:
@@ -121,6 +128,52 @@ models_status = {
 crack_detector = None
 sign_detector = None
 signs_classifier = None
+bearer_scheme = HTTPBearer(auto_error=False)
+
+
+def _normalize_email(email: str) -> str:
+    return email.strip().lower()
+
+
+def _normalize_username(username: str) -> str:
+    return username.strip().lower()
+
+
+def _to_user_public(user_doc: dict) -> UserPublic:
+    return UserPublic(
+        id=user_doc["_id"],
+        email=user_doc["email"],
+        username=user_doc["username"],
+        is_active=bool(user_doc.get("is_active", True)),
+        created_at=user_doc["created_at"],
+    )
+
+
+async def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+) -> dict:
+    if credentials is None or credentials.scheme.lower() != "bearer":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required",
+        )
+
+    payload = decode_access_token(credentials.credentials)
+    subject = payload.get("sub") if payload else None
+    if not subject:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+        )
+
+    user = await get_users_collection().find_one({"_id": subject})
+    if user is None or not user.get("is_active", True):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+        )
+
+    return user
 
 
 def load_models():
@@ -390,7 +443,16 @@ def classify_signs(
 
 @app.on_event("startup")
 async def startup_event():
+    if ENVIRONMENT == "production" and JWT_SECRET_KEY == "change-me-in-production":
+        raise RuntimeError("Set JWT_SECRET_KEY for production")
+
+    await connect_to_mongo()
     load_models()
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    await close_mongo_connection()
 
 
 @app.get("/health", response_model=HealthResponse)
@@ -427,6 +489,74 @@ async def get_markers():
             severity=1,
         ),
     ]
+
+
+@app.post("/auth/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
+async def register_account(payload: RegisterRequest):
+    users = get_users_collection()
+    now = datetime.now(timezone.utc)
+    normalized_email = _normalize_email(str(payload.email))
+    normalized_username = _normalize_username(payload.username)
+
+    user_doc = {
+        "_id": str(uuid4()),
+        "email": normalized_email,
+        "username": normalized_username,
+        "password_hash": hash_password(payload.password),
+        "is_active": True,
+        "created_at": now,
+        "updated_at": now,
+    }
+
+    try:
+        await users.insert_one(user_doc)
+    except DuplicateKeyError:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Email or username is already in use",
+        )
+
+    token = create_access_token(subject=user_doc["_id"])
+    return TokenResponse(
+        access_token=token,
+        expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        user=_to_user_public(user_doc),
+    )
+
+
+@app.post("/auth/login", response_model=TokenResponse)
+async def login_account(payload: LoginRequest):
+    users = get_users_collection()
+    identifier = payload.identifier.strip().lower()
+    user_doc = await users.find_one(
+        {"$or": [{"email": identifier}, {"username": identifier}]}
+    )
+
+    if user_doc is None or not verify_password(
+        payload.password, user_doc.get("password_hash", "")
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials",
+        )
+
+    if not user_doc.get("is_active", True):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account is deactivated",
+        )
+
+    token = create_access_token(subject=user_doc["_id"])
+    return TokenResponse(
+        access_token=token,
+        expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        user=_to_user_public(user_doc),
+    )
+
+
+@app.get("/auth/me", response_model=UserPublic)
+async def get_me(current_user: dict = Depends(get_current_user)):
+    return _to_user_public(current_user)
 
 
 @app.post("/detect/cracks", response_model=ProcessingResult)
