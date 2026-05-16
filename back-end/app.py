@@ -1,7 +1,9 @@
 import sys
 import io
-import uuid
+import os
 import logging
+import re
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -38,8 +40,23 @@ app = FastAPI(
 MODELS_DIR = Path("./models")
 MODELS_DIR.mkdir(exist_ok=True)
 
-DEBUG_DIR = Path("./debug_crops")
-DEBUG_DIR.mkdir(exist_ok=True)
+DEBUG_DIR = Path(os.getenv("DEBUG_CROPS_DIR", "./debug_crops"))
+
+
+def _env_truthy(name: str) -> bool:
+    return os.getenv(name, "false").strip().lower() in {"1", "true", "yes", "on"}
+
+
+ENVIRONMENT = os.getenv("ENVIRONMENT", "production").strip().lower()
+SAVE_DEBUG_ARTIFACTS = _env_truthy("SAVE_DEBUG_CROPS") or ENVIRONMENT in {
+    "local",
+    "development",
+    "dev",
+    "debug",
+}
+
+if SAVE_DEBUG_ARTIFACTS:
+    DEBUG_DIR.mkdir(exist_ok=True)
 
 # Класи
 CRACK_CLASSES = [
@@ -66,6 +83,45 @@ sign_transforms = transforms.Compose(
 # але залишаємо цей як резервний (запобіжник)
 GTSRB_CLASSES_BACKUP = {i: f"Клас {i}" for i in range(200)}
 dynamic_labels = None
+
+
+def _sanitize_debug_segment(value: Optional[str]) -> str:
+    if not value:
+        return "upload"
+
+    cleaned = Path(value).stem
+    cleaned = re.sub(r"[^\w]+", "_", cleaned, flags=re.UNICODE).strip("_")
+    cleaned = re.sub(r"_+", "_", cleaned)
+    return cleaned[:60] or "upload"
+
+
+def _save_debug_image(
+    image: np.ndarray,
+    *,
+    source_name: Optional[str],
+    model_name: str,
+    stage: str,
+    index: Optional[int] = None,
+    details: Optional[str] = None,
+) -> Path:
+    if not SAVE_DEBUG_ARTIFACTS:
+        return DEBUG_DIR / "disabled.jpg"
+
+    DEBUG_DIR.mkdir(exist_ok=True)
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]
+    parts = [timestamp, _sanitize_debug_segment(source_name), model_name, stage]
+
+    if index is not None:
+        parts.append(f"{index:02d}")
+
+    if details:
+        parts.append(_sanitize_debug_segment(details))
+
+    file_name = "__".join(parts) + ".jpg"
+    debug_path = DEBUG_DIR / file_name
+    cv2.imwrite(str(debug_path), image)
+    return debug_path
 
 
 # Моделі Pydantic
@@ -188,7 +244,9 @@ async def process_image_to_array(
     return image_cv
 
 
-def detect_cracks(image: np.ndarray) -> tuple[list[Detection], float]:
+def detect_cracks(
+    image: np.ndarray, source_name: Optional[str] = None
+) -> tuple[list[Detection], float]:
     if not models_status["cracks_detector"] or crack_detector is None:
         raise HTTPException(
             status_code=503,
@@ -196,6 +254,13 @@ def detect_cracks(image: np.ndarray) -> tuple[list[Detection], float]:
         )
 
     try:
+        _save_debug_image(
+            image,
+            source_name=source_name,
+            model_name="cracks",
+            stage="input",
+        )
+
         results = crack_detector.predict(source=image, device=DEVICE, verbose=True)
         detections = []
         debug_image = image.copy()
@@ -226,8 +291,12 @@ def detect_cracks(image: np.ndarray) -> tuple[list[Detection], float]:
                     debug_image, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2
                 )
 
-        if detections:
-            cv2.imwrite(str(DEBUG_DIR / f"cracks_{uuid.uuid4().hex}.jpg"), debug_image)
+        _save_debug_image(
+            debug_image,
+            source_name=source_name,
+            model_name="cracks",
+            stage="annotated",
+        )
         return detections, 0.0
     except Exception as e:
         raise HTTPException(
@@ -235,7 +304,9 @@ def detect_cracks(image: np.ndarray) -> tuple[list[Detection], float]:
         )
 
 
-def classify_signs(image: np.ndarray) -> tuple[list[Detection], float]:
+def classify_signs(
+    image: np.ndarray, source_name: Optional[str] = None
+) -> tuple[list[Detection], float]:
     if not models_status["signs_classifier"] or signs_classifier is None:
         raise HTTPException(
             status_code=503, detail="Класифікатор знаків не завантажено."
@@ -248,11 +319,19 @@ def classify_signs(image: np.ndarray) -> tuple[list[Detection], float]:
     CLASSIFICATION_CONFIDENCE_THRESHOLD = 0.4
 
     try:
+        _save_debug_image(
+            image,
+            source_name=source_name,
+            model_name="signs",
+            stage="input",
+        )
+
         detections = []
         debug_image = image.copy()
 
         # Запускаємо детекцію
         yolo_results = sign_detector.predict(source=image, device=DEVICE, verbose=True)
+        crop_index = 0
 
         for result in yolo_results:
             if result.boxes is None or len(result.boxes) == 0:
@@ -286,6 +365,16 @@ def classify_signs(image: np.ndarray) -> tuple[list[Detection], float]:
                     or sign_crop.shape[1] < 15
                 ):
                     continue
+
+                crop_index += 1
+                _save_debug_image(
+                    sign_crop,
+                    source_name=source_name,
+                    model_name="signs",
+                    stage="crop",
+                    index=crop_index,
+                    details=f"det_{det_confidence:.2f}",
+                )
 
                 # Передаємо кроп у твій ResNet50 класифікатор
                 crop_rgb = cv2.cvtColor(sign_crop, cv2.COLOR_BGR2RGB)
@@ -329,8 +418,12 @@ def classify_signs(image: np.ndarray) -> tuple[list[Detection], float]:
                     2,
                 )
 
-        if detections:
-            cv2.imwrite(str(DEBUG_DIR / f"signs_{uuid.uuid4().hex}.jpg"), debug_image)
+        _save_debug_image(
+            debug_image,
+            source_name=source_name,
+            model_name="signs",
+            stage="annotated",
+        )
 
         return detections, 0.0
     except Exception as e:
@@ -351,7 +444,7 @@ async def health_check():
 @app.post("/detect/cracks", response_model=ProcessingResult)
 async def detect_cracks_endpoint(file: UploadFile = File(...)):
     image = await process_image_to_array(file)
-    detections, proc_time = detect_cracks(image)
+    detections, proc_time = detect_cracks(image, source_name=file.filename)
     return ProcessingResult(
         success=True,
         message=f"Оброблено",
@@ -364,7 +457,7 @@ async def detect_cracks_endpoint(file: UploadFile = File(...)):
 @app.post("/classify/signs", response_model=ProcessingResult)
 async def classify_signs_endpoint(file: UploadFile = File(...)):
     image = await process_image_to_array(file)
-    detections, proc_time = classify_signs(image)
+    detections, proc_time = classify_signs(image, source_name=file.filename)
     return ProcessingResult(
         success=True,
         message=f"Оброблено",
@@ -377,15 +470,16 @@ async def classify_signs_endpoint(file: UploadFile = File(...)):
 @app.post("/process/all", response_model=dict)
 async def process_all_models(file: UploadFile = File(...)):
     image = await process_image_to_array(file)
+    source_name = file.filename
     results = {}
     try:
-        cracks, _ = detect_cracks(image)
+        cracks, _ = detect_cracks(image, source_name=source_name)
         results["cracks"] = {"success": True, "detections": cracks}
     except Exception as e:
         results["cracks"] = {"success": False, "error": str(e)}
 
     try:
-        signs, _ = classify_signs(image)
+        signs, _ = classify_signs(image, source_name=source_name)
         results["signs"] = {"success": True, "detections": signs}
     except Exception as e:
         results["signs"] = {"success": False, "error": str(e)}
