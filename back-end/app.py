@@ -139,7 +139,7 @@ def _to_user_public(user_doc: dict) -> UserPublic:
     return UserPublic(
         id=user_doc["_id"],
         email=user_doc["email"],
-        username=user_doc["username"],
+        username=user_doc.get("username"),
         is_active=bool(user_doc.get("is_active", True)),
         created_at=user_doc["created_at"],
     )
