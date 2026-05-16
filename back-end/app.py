@@ -144,7 +144,7 @@ def load_models():
         if YOLO is None:
             raise ImportError("ultralytics не встановлено")
 
-        sign_detector = YOLO(MODELS_DIR / "yolov8m-oiv7.pt")
+        sign_detector = YOLO(MODELS_DIR / "yolov8s-oiv7.pt")
         _fuse_yolo_model(sign_detector)
         models_status["sign_detector"] = True
         logger.info("✓ Google OpenImages Traffic Sign detector loaded successfully")
