@@ -24,4 +24,4 @@ jobs:
           git remote add hf https://gamlinskijoleg:$HF_TOKEN@huggingface.co/spaces/gamlinskijoleg/Easyroad
 
           # 3. Extract the 'back-end' folder and push its CONTENTS directly to the hf main branch
-          git subtree push --prefix back-end hf main --force
+          git subtree push --prefix back-end hf main
