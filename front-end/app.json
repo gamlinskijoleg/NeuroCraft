@@ -7,7 +7,6 @@
         "icon": "./assets/images/icon.png",
         "scheme": "front-end",
         "userInterfaceStyle": "dark",
-        "newArchEnabled": true,
         "splash": {
             "image": "./assets/images/splash-icon.png",
             "resizeMode": "contain",
@@ -15,7 +14,10 @@
         },
         "ios": {
             "supportsTablet": true,
-            "bundleIdentifier": "com.anonymous.frontend"
+            "bundleIdentifier": "com.anonymous.frontend",
+            "runtimeVersion": {
+                "policy": "appVersion"
+            }
         },
         "android": {
             "adaptiveIcon": {
@@ -23,7 +25,9 @@
                 "backgroundImage": "./assets/images/android-icon-background.png",
                 "monochromeImage": "./assets/images/android-icon-monochrome.png"
             },
-            "package": "com.anonymous.frontend"
+            "package": "com.anonymous.frontend",
+            "permissions": ["android.permission.RECORD_AUDIO"],
+            "runtimeVersion": "1.0.0"
         },
         "web": {
             "bundler": "metro",
@@ -44,7 +48,15 @@
             "reactCompiler": true
         },
         "extra": {
-            "API_URL": "https://neurocraft-backend.onrender.com"
-        }
+            "API_URL": "https://neurocraft-backend.onrender.com",
+            "router": {},
+            "eas": {
+                "projectId": "8bed685c-c142-47ce-8a45-b9e3518c797d"
+            }
+        },
+        "updates": {
+            "url": "https://u.expo.dev/8bed685c-c142-47ce-8a45-b9e3518c797d"
+        },
+        "owner": "neurocraft-team"
     }
 }
