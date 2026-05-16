@@ -15,6 +15,7 @@ from torchvision import models, transforms
 from config import MODELS_DIR
 from debug_utils import save_debug_image
 from image_utils import process_image_to_array
+from translation import mtsd_ukrainian_signs
 
 try:
     from ultralytics import YOLO
@@ -342,12 +343,14 @@ def classify_signs(
                 confidence_value = confidence.item()
 
                 if confidence_value >= CLASSIFICATION_CONFIDENCE_THRESHOLD:
-                    if dynamic_labels and class_id_int < len(dynamic_labels):
-                        class_name = str(dynamic_labels[class_id_int])
-                    else:
-                        class_name = GTSRB_CLASSES_BACKUP.get(
-                            class_id_int, f"Клас {class_id_int}"
-                        )
+                    class_name = mtsd_ukrainian_signs.get(class_id_int)
+                    if class_name is None:
+                        if dynamic_labels and class_id_int < len(dynamic_labels):
+                            class_name = str(dynamic_labels[class_id_int])
+                        else:
+                            class_name = GTSRB_CLASSES_BACKUP.get(
+                                class_id_int, f"Клас {class_id_int}"
+                            )
                 else:
                     class_name = "Нерозпізнаний знак"
 
