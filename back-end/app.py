@@ -64,7 +64,7 @@ GTSRB_CLASSES_BACKUP = {i: f"Клас {i}" for i in range(200)}
 dynamic_labels = None
 
 
-def _fuse_yolo_model(model: object) -> None:
+def _fuse_yolo_model(model) -> None:
     try:
         if hasattr(model, "model") and model.model is not None and hasattr(model.model, "fuse"):
             model.model.fuse()

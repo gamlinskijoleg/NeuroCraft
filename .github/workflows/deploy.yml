@@ -1,25 +1,25 @@
 name: Deploy Backend to Render
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'back-end/**'
-      - 'render.yaml'
-      - 'runtime.txt'
-      - '.python-version'
-      - '.github/workflows/deploy.yml'
-  workflow_dispatch:
+    push:
+        branches:
+            - main
+        paths:
+            - "back-end/**"
+            - "render.yaml"
+            - "runtime.txt"
+            - ".python-version"
+            - ".github/workflows/deploy.yml"
+    workflow_dispatch:
 
 jobs:
-  deploy:
-    runs-on: ubuntu-latest
+    deploy:
+        runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
 
-      - name: Deploy to Render
-        run: |
-          curl https://api.render.com/deploy/srv-${{ secrets.RENDER_SERVICE_ID }}?key=${{ secrets.RENDER_API_KEY }} -X POST
+            - name: Deploy to Render
+              run: |
+                  curl https://api.render.com/deploy/srv-${{ secrets.RENDER_SERVICE_ID }}?key=${{ secrets.RENDER_API_KEY }} -X POST

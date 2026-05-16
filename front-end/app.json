@@ -48,7 +48,7 @@
             "reactCompiler": true
         },
         "extra": {
-            "API_URL": "https://neurocraft-backend.onrender.com",
+            "API_URL": "https://gamlinskijoleg-easyroad.hf.space/",
             "router": {},
             "eas": {
                 "projectId": "8bed685c-c142-47ce-8a45-b9e3518c797d"
