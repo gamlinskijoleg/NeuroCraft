@@ -1,4 +1,5 @@
 import sys
+import gc
 import logging
 from typing import Optional
 
@@ -24,8 +25,9 @@ except Exception:
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-print(f"Using device: {'cuda' if torch.cuda.is_available() else 'cpu'}")
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Using device: {DEVICE}")
+torch.set_grad_enabled(False)
 
 # Ініціалізація FastAPI
 app = FastAPI(
@@ -60,6 +62,20 @@ sign_transforms = transforms.Compose(
 # але залишаємо цей як резервний (запобіжник)
 GTSRB_CLASSES_BACKUP = {i: f"Клас {i}" for i in range(200)}
 dynamic_labels = None
+
+
+def _fuse_yolo_model(model: object) -> None:
+    try:
+        if hasattr(model, "model") and model.model is not None and hasattr(model.model, "fuse"):
+            model.model.fuse()
+    except Exception as e:
+        logger.warning(f"Could not fuse YOLO model: {e}")
+
+
+def _cleanup_inference_memory() -> None:
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
 
 
 # Моделі Pydantic
@@ -116,6 +132,7 @@ def load_models():
             if YOLO is None:
                 raise ImportError("ultralytics не встановлено")
             crack_detector = YOLO(str(cracks_path))
+            _fuse_yolo_model(crack_detector)
             models_status["cracks_detector"] = True
             logger.info("✓ Cracks detector (YOLO11) loaded successfully")
         except Exception as e:
@@ -128,6 +145,7 @@ def load_models():
             raise ImportError("ultralytics не встановлено")
 
         sign_detector = YOLO(MODELS_DIR / "yolov8m-oiv7.pt")
+        _fuse_yolo_model(sign_detector)
         models_status["sign_detector"] = True
         logger.info("✓ Google OpenImages Traffic Sign detector loaded successfully")
     except Exception as e:
@@ -230,6 +248,8 @@ def detect_cracks(
         raise HTTPException(
             status_code=500, detail=f"Помилка детекції тріщин: {str(e)}"
         )
+    finally:
+        _cleanup_inference_memory()
 
 
 def classify_signs(
@@ -357,6 +377,8 @@ def classify_signs(
     except Exception as e:
         logger.error(f"Помилка класифікації знаків: {e}")
         raise HTTPException(status_code=500, detail=f"Внутрішня помилка: {str(e)}")
+    finally:
+        _cleanup_inference_memory()
 
 
 @app.on_event("startup")
