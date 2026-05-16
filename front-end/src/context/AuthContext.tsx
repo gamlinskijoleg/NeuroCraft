@@ -20,7 +20,6 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 type AuthPayload = {
     identifier?: string;
     email?: string;
-    username?: string;
     password: string;
 };
 
@@ -63,27 +62,17 @@ async function requestAuth(url: string, payload: AuthPayload): Promise<AuthSessi
 
         if (typeof data === "string") {
             message = data;
-        } else if (data && typeof data === "object") {
-            if ("detail" in data) {
-                const detail = (data as any).detail;
-                if (typeof detail === "string") {
-                    message = detail;
-                } else if (Array.isArray(detail) && detail.length > 0) {
-                    // Handle Pydantic validation errors (array of error objects)
-                    const errorMessages = detail
-                        .map((err: any) => err.msg || JSON.stringify(err))
-                        .join("; ");
-                    message = errorMessages;
-                }
-            } else if ("message" in data && typeof (data as any).message === "string") {
-                message = (data as any).message;
-            } else if ("error" in data && typeof (data as any).error === "string") {
-                message = (data as any).error;
-            } else {
-                message = JSON.stringify(data);
+        } else if (data && typeof data === "object" && "detail" in data) {
+            const detail = (data as any).detail;
+            if (typeof detail === "string") {
+                message = detail;
+            } else if (Array.isArray(detail) && detail.length > 0) {
+                // Handle Pydantic validation errors
+                const errorMessages = detail
+                    .map((err: any) => err.msg || JSON.stringify(err))
+                    .join("; ");
+                message = errorMessages;
             }
-        } else if (response.statusText) {
-            message = response.statusText;
         }
 
         throw new Error(message);

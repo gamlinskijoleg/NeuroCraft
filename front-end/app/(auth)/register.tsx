@@ -43,54 +43,9 @@ export default function RegisterScreen() {
             await register(email.trim(), password);
             router.replace("/");
         } catch (error) {
-            let errorMsg = "Registration failed";
-
-            // Unwrap if error is wrapped
             const actualError = (error as any)?.error || error;
-
-            // Log the full error structure for debugging
-            const errObj = actualError as any;
-            const descriptors = Object.getOwnPropertyDescriptors(actualError || {});
-
-            console.error("Full error object:", {
-                isError: actualError instanceof Error,
-                type: typeof actualError,
-                message: errObj.message,
-                stack: errObj.stack,
-                descriptors: descriptors,
-                status: errObj.status,
-                statusCode: errObj.statusCode,
-                response: errObj.response,
-                data: errObj.data,
-                error: actualError,
-            });
-
-            // Try to get error message from various possible sources
-            if (errObj.response?.data?.message) {
-                errorMsg = errObj.response.data.message;
-            } else if (errObj.response?.data?.error) {
-                errorMsg = errObj.response.data.error;
-            } else if (errObj.response?.data) {
-                if (typeof errObj.response.data === "string") {
-                    errorMsg = errObj.response.data;
-                } else {
-                    errorMsg = JSON.stringify(errObj.response.data);
-                }
-            } else if (errObj.data?.message) {
-                errorMsg = errObj.data.message;
-            } else if (typeof errObj.data === "string") {
-                errorMsg = errObj.data;
-            } else if (errObj.message && typeof errObj.message === "string" && errObj.message !== "[object Object]") {
-                errorMsg = errObj.message;
-            }
-
-            // Avoid showing [object Object]
-            if (errorMsg === "[object Object]" || !errorMsg) {
-                errorMsg = "An error occurred during registration";
-            }
-
-            setErrorMessage(errorMsg);
-            console.error("Registration error:", error);
+            const errorMsg = actualError instanceof Error ? actualError.message : "Registration failed";
+            setErrorMessage(errorMsg || "An error occurred during registration");
         } finally {
             setIsSubmitting(false);
         }
