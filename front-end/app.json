@@ -29,11 +29,6 @@
             "permissions": ["android.permission.RECORD_AUDIO"],
             "runtimeVersion": "1.0.0"
         },
-        "web": {
-            "bundler": "metro",
-            "output": "static",
-            "favicon": "./assets/images/favicon.png"
-        },
         "plugins": [
             "expo-router",
             [
