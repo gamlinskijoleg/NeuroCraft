@@ -5,7 +5,7 @@ FROM python:3.10-slim
 WORKDIR /code
 
 # Копіюємо файл залежностей
-COPY ./requirements-render.txt /code/requirements-render.txt
+COPY ./requirements-server.txt /code/requirements-server.txt
 
 # Перемикаємось на root для системних налаштувань
 USER root
@@ -21,7 +21,7 @@ RUN useradd -m -u 1000 user
 
 # Оновлюємо pip та встановлюємо залежності глобально (як root)
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r /code/requirements-render.txt
+    pip install --no-cache-dir -r /code/requirements-server.txt
 
 # Тепер, коли все встановлено, перемикаємось на створеного користувача
 USER user
