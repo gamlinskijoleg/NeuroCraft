@@ -1,7 +1,14 @@
+"""Database connection helpers and initial setup.
+
+Creates common indexes and applies a JSON Schema validator for
+`challenges_badges` during startup.
+"""
+
 from typing import Optional
 
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection, AsyncIOMotorDatabase
 from pymongo import ASCENDING, IndexModel
+from pymongo.errors import OperationFailure
 
 from config import MONGODB_DB_NAME, MONGODB_URI
 
@@ -33,7 +40,7 @@ async def connect_to_mongo() -> None:
         ]
     )
 
-    # Ensure indexes for gamification badges
+    # Create indexes for the badges collection
     badges = _database.get_collection("challenges_badges")
     await badges.create_indexes(
         [
@@ -41,6 +48,40 @@ async def connect_to_mongo() -> None:
             IndexModel([("type", ASCENDING)], name="ix_badges_type"),
         ]
     )
+
+    # Apply JSON Schema validator for `challenges_badges`
+    badge_validator = {
+        "$jsonSchema": {
+            "bsonType": "object",
+            "required": ["id", "type", "title", "target_value"],
+            "properties": {
+                "id": {"bsonType": "string"},
+                "type": {"bsonType": "string"},
+                "title": {"bsonType": "string"},
+                "description": {"bsonType": ["string", "null"]},
+                "target_value": {"bsonType": "int"},
+                "icon_url_active": {"bsonType": ["string", "null"]},
+                "icon_url_locked": {"bsonType": ["string", "null"]},
+            },
+        }
+    }
+
+    # Use collMod to attach validator, or create the collection if missing
+    try:
+        await _database.command(
+            {
+                "collMod": "challenges_badges",
+                "validator": badge_validator,
+                "validationLevel": "moderate",
+            }
+        )
+    except OperationFailure:
+        # collMod may fail if the collection doesn't exist; create it with validator
+        existing = await _database.list_collection_names()
+        if "challenges_badges" not in existing:
+            await _database.create_collection(
+                "challenges_badges", validator=badge_validator, validationLevel="moderate"
+            )
 
 
 async def close_mongo_connection() -> None:
