@@ -74,7 +74,10 @@ export default function BottomNavigation() {
             ]}
         >
             <Animated.View
-                style={{ transform: [{ scale: scalesRef.current.index }] }}
+                style={{
+                    flex: activeTab === "index" ? 2 : 1,
+                    transform: [{ scale: scalesRef.current.index }],
+                }}
             >
                 <Pressable
                     onPress={() => {
@@ -83,21 +86,8 @@ export default function BottomNavigation() {
                     style={[
                         styles.navItemButton,
                         activeTab === "index"
-                            ? [
-                                  styles.navItemButtonActive,
-                                  {
-                                      width: "auto",
-                                      paddingHorizontal:
-                                          activePaddingHorizontal,
-                                      paddingVertical: activePaddingVertical,
-                                      borderRadius: Math.round(itemSize / 2),
-                                  },
-                              ]
-                            : {
-                                  width: itemSize,
-                                  height: itemSize,
-                                  borderRadius: itemSize / 2,
-                              },
+                            ? [styles.navItemButtonActive]
+                            : styles.navItemButtonInactive,
                     ]}
                 >
                     <Ionicons
@@ -119,7 +109,10 @@ export default function BottomNavigation() {
             </Animated.View>
 
             <Animated.View
-                style={{ transform: [{ scale: scalesRef.current.map }] }}
+                style={{
+                    flex: activeTab === "map" ? 2 : 1,
+                    transform: [{ scale: scalesRef.current.map }],
+                }}
             >
                 <Pressable
                     onPress={() => {
@@ -128,21 +121,8 @@ export default function BottomNavigation() {
                     style={[
                         styles.navItemButton,
                         activeTab === "map"
-                            ? [
-                                  styles.navItemButtonActive,
-                                  {
-                                      width: "auto",
-                                      paddingHorizontal:
-                                          activePaddingHorizontal,
-                                      paddingVertical: activePaddingVertical,
-                                      borderRadius: Math.round(itemSize / 2),
-                                  },
-                              ]
-                            : {
-                                  width: itemSize,
-                                  height: itemSize,
-                                  borderRadius: itemSize / 2,
-                              },
+                            ? [styles.navItemButtonActive]
+                            : styles.navItemButtonInactive,
                     ]}
                 >
                     <Ionicons
@@ -164,7 +144,10 @@ export default function BottomNavigation() {
             </Animated.View>
 
             <Animated.View
-                style={{ transform: [{ scale: scalesRef.current.goals }] }}
+                style={{
+                    flex: activeTab === "goals" ? 2 : 1,
+                    transform: [{ scale: scalesRef.current.goals }],
+                }}
             >
                 <Pressable
                     onPress={() => {
@@ -173,21 +156,8 @@ export default function BottomNavigation() {
                     style={[
                         styles.navItemButton,
                         activeTab === "goals"
-                            ? [
-                                  styles.navItemButtonActive,
-                                  {
-                                      width: "auto",
-                                      paddingHorizontal:
-                                          activePaddingHorizontal,
-                                      paddingVertical: activePaddingVertical,
-                                      borderRadius: Math.round(itemSize / 2),
-                                  },
-                              ]
-                            : {
-                                  width: itemSize,
-                                  height: itemSize,
-                                  borderRadius: itemSize / 2,
-                              },
+                            ? [styles.navItemButtonActive]
+                            : styles.navItemButtonInactive,
                     ]}
                 >
                     <Ionicons
@@ -209,7 +179,10 @@ export default function BottomNavigation() {
             </Animated.View>
 
             <Animated.View
-                style={{ transform: [{ scale: scalesRef.current.user }] }}
+                style={{
+                    flex: activeTab === "user" ? 2 : 1,
+                    transform: [{ scale: scalesRef.current.user }],
+                }}
             >
                 <Pressable
                     onPress={() => {
@@ -218,21 +191,8 @@ export default function BottomNavigation() {
                     style={[
                         styles.navItemButton,
                         activeTab === "user"
-                            ? [
-                                  styles.navItemButtonActive,
-                                  {
-                                      width: "auto",
-                                      paddingHorizontal:
-                                          activePaddingHorizontal,
-                                      paddingVertical: activePaddingVertical,
-                                      borderRadius: Math.round(itemSize / 2),
-                                  },
-                              ]
-                            : {
-                                  width: itemSize,
-                                  height: itemSize,
-                                  borderRadius: itemSize / 2,
-                              },
+                            ? [styles.navItemButtonActive]
+                            : styles.navItemButtonInactive,
                     ]}
                 >
                     <Ionicons
@@ -265,36 +225,39 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         marginHorizontal: 16,
         marginBottom: 42,
-        justifyContent: "flex-start",
+        justifyContent: "space-between",
         alignItems: "center",
-        gap: 14,
+        gap: 10,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.18,
         shadowRadius: 10,
         elevation: 10,
+        position: "absolute",
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 10,
     },
     navItemButton: {
-        width: 50,
-        height: 50,
+        display: "flex",
+        width: "100%",
+        minHeight: 50,
         alignItems: "center",
         justifyContent: "center",
         backgroundColor: "#172033",
-        borderRadius: 50,
+        borderRadius: 28,
+        paddingHorizontal: 12,
+        paddingVertical: 12,
+    },
+    navItemButtonInactive: {
+        flex: 1,
     },
     navItemButtonActive: {
-        width: "auto",
-        paddingVertical: 12,
-        paddingHorizontal: 22,
+        flex: 2,
         backgroundColor: "#4CAF50",
-        borderRadius: 28,
         flexDirection: "row",
-        gap: 8,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.12,
-        shadowRadius: 4,
-        elevation: 3,
+        gap: 4,
     },
     navLabelActive: {
         fontSize: 14,

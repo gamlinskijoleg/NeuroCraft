@@ -97,7 +97,7 @@ export default function UserTabScreen() {
 const styles = StyleSheet.create({
     screen: {
         flex: 1,
-        backgroundColor: "#F5F5F7",
+        backgroundColor: "#0B0F1A",
     },
     scroll: {
         paddingHorizontal: 14,
