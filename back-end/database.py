@@ -33,6 +33,15 @@ async def connect_to_mongo() -> None:
         ]
     )
 
+    # Ensure indexes for gamification badges
+    badges = _database.get_collection("challenges_badges")
+    await badges.create_indexes(
+        [
+            IndexModel([("id", ASCENDING)], unique=True, name="uq_badges_id"),
+            IndexModel([("type", ASCENDING)], name="ix_badges_type"),
+        ]
+    )
+
 
 async def close_mongo_connection() -> None:
     global _client, _database

@@ -3,12 +3,15 @@ from __future__ import annotations
 from typing import List, Optional
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field
 
 from database import get_database, get_users_collection
+from security import decode_access_token
 
 router = APIRouter()
+bearer = HTTPBearer(auto_error=False)
 
 
 # Pydantic v2-style schemas
@@ -64,7 +67,14 @@ class AchievementsListResponse(BaseModel):
 
 
 @router.get("/{user_id}/challenges", response_model=ChallengesListResponse)
-async def get_user_challenges(user_id: str):
+async def get_user_challenges(user_id: str, creds: HTTPAuthorizationCredentials = Depends(bearer)):
+    if creds is None or creds.scheme.lower() != "bearer":
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
+    payload = decode_access_token(creds.credentials)
+    subject = payload.get("sub") if payload else None
+    if not subject or subject != user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+
     users = get_users_collection()
     db = get_database()
     badges_coll = db.get_collection("challenges_badges")
@@ -121,7 +131,14 @@ async def get_user_challenges(user_id: str):
 
 
 @router.get("/{user_id}/achievements", response_model=AchievementsListResponse)
-async def get_user_achievements(user_id: str):
+async def get_user_achievements(user_id: str, creds: HTTPAuthorizationCredentials = Depends(bearer)):
+    if creds is None or creds.scheme.lower() != "bearer":
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
+    payload = decode_access_token(creds.credentials)
+    subject = payload.get("sub") if payload else None
+    if not subject or subject != user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+
     db = get_database()
     users = get_users_collection()
     badges_coll = db.get_collection("challenges_badges")
@@ -131,13 +148,17 @@ async def get_user_achievements(user_id: str):
     async for b in badges_coll.find({}):
         badges.append(b)
 
-    # Load user progress
-    user = await users.find_one({"_id": user_id}, {"challenges_progress": 1})
-    completed = set()
-    if user and user.get("challenges_progress"):
-        for p in user.get("challenges_progress"):
-            if p.get("is_completed"):
-                completed.add(str(p.get("badge_id")))
+    # Load user achievements (explicit array) and fallback to challenges_progress
+    user = await users.find_one({"_id": user_id}, {"achievements": 1, "challenges_progress": 1})
+    unlocked = set()
+    if user:
+        if user.get("achievements"):
+            for a in user.get("achievements"):
+                unlocked.add(str(a.get("badge_id")))
+        elif user.get("challenges_progress"):
+            for p in user.get("challenges_progress"):
+                if p.get("is_completed"):
+                    unlocked.add(str(p.get("badge_id")))
 
     out = []
     for b in badges:
@@ -151,7 +172,7 @@ async def get_user_achievements(user_id: str):
                 target_value=int(b.get("target_value", 0)),
                 icon_url_active=b.get("icon_url_active"),
                 icon_url_locked=b.get("icon_url_locked"),
-                is_locked=(bid not in completed),
+                is_locked=(bid not in unlocked),
             )
         )
 
@@ -159,84 +180,88 @@ async def get_user_achievements(user_id: str):
 
 
 @router.post("/{user_id}/track", status_code=status.HTTP_200_OK)
-async def track_action(user_id: str, payload: TrackActionRequest):
+async def track_action(user_id: str, payload: TrackActionRequest, creds: HTTPAuthorizationCredentials = Depends(bearer)):
+    if creds is None or creds.scheme.lower() != "bearer":
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
+    payload_token = decode_access_token(creds.credentials)
+    subject = payload_token.get("sub") if payload_token else None
+    if not subject or subject != user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+
     users = get_users_collection()
     db = get_database()
     badges_coll = db.get_collection("challenges_badges")
 
-    # Map action_type to statistics field - extendable
     ACTION_TO_STAT = {
         "pothole": "total_potholes_reported",
         "sign": "total_signs_detected",
         "scan": "total_scans",
     }
 
-    stat_key = ACTION_TO_STAT.get(payload.action_type)
-    if not stat_key:
-        # allow custom stat key directly if action_type appears to be a stats key
-        stat_key = payload.action_type
-
+    stat_key = ACTION_TO_STAT.get(payload.action_type) or payload.action_type
     stat_field = f"statistics.{stat_key}"
 
     # Find badges that correspond to this action type
     badge_cursor = badges_coll.find({"type": payload.action_type})
     badges = [b async for b in badge_cursor]
-    badge_ids = [str(b.get("id") or b.get("_id")) for b in badges]
 
-    # 1) increment statistics counter
-    await users.update_one({"_id": user_id}, {"$inc": {stat_field: payload.increment}})
-
-    # 2) For each badge of this type, try to increment existing progress element, otherwise push a new progress
-    for b in badges:
-        bid = str(b.get("id") or b.get("_id"))
-        # try to increment an existing array element
-        res = await users.update_one(
-            {"_id": user_id, "challenges_progress.badge_id": bid},
-            {"$inc": {"challenges_progress.$.current_value": payload.increment}},
-        )
-
-        if res.matched_count == 0:
-            # push a new progress entry
-            new_progress = {
-                "badge_id": bid,
-                "current_value": payload.increment,
-                "is_completed": False,
-                "unlocked_at": None,
-            }
-            await users.update_one({"_id": user_id}, {"$push": {"challenges_progress": new_progress}})
-
-    # 3) Now check for completions and set is_completed/unlocked_at where needed
+    # Use transaction for atomic updates (requires replica set)
+    client = db.client
+    session = await client.start_session()
     now = datetime.now(timezone.utc)
-    # Reload user progress for affected badges
-    user = await users.find_one({"_id": user_id}, {"challenges_progress": 1})
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+    try:
+        async with session.start_transaction():
+            # 1) increment statistics counter
+            await users.update_one({"_id": user_id}, {"$inc": {stat_field: payload.increment}}, session=session)
 
-    updates_needed = []
-    progress_list = user.get("challenges_progress") or []
-    # Map badge target values for quick lookup
-    target_map = {str(b.get("id") or b.get("_id")): int(b.get("target_value", 0)) for b in badges}
+            # 2) For each badge of this type, increment existing element or push new one
+            for b in badges:
+                bid = str(b.get("id") or b.get("_id"))
+                res = await users.update_one(
+                    {"_id": user_id, "challenges_progress.badge_id": bid},
+                    {"$inc": {"challenges_progress.$.current_value": payload.increment}},
+                    session=session,
+                )
+                if res.matched_count == 0:
+                    new_progress = {
+                        "badge_id": bid,
+                        "current_value": payload.increment,
+                        "is_completed": False,
+                        "unlocked_at": None,
+                    }
+                    await users.update_one({"_id": user_id}, {"$push": {"challenges_progress": new_progress}}, session=session)
 
-    for p in progress_list:
-        bid = str(p.get("badge_id"))
-        if bid not in target_map:
-            continue
-        if bool(p.get("is_completed")):
-            continue
-        if int(p.get("current_value", 0)) >= target_map.get(bid, 0):
-            updates_needed.append(bid)
+            # 3) Check for completions based on latest progress and set is_completed + unlocked_at, and push achievement
+            user = await users.find_one({"_id": user_id}, {"challenges_progress": 1, "achievements": 1}, session=session)
+            if not user:
+                raise HTTPException(status_code=404, detail="User not found")
 
-    for bid in updates_needed:
-        # atomically set is_completed and unlocked_at for matching array element
-        await users.update_one(
-            {"_id": user_id},
-            {
-                "$set": {
-                    "challenges_progress.$[elem].is_completed": True,
-                    "challenges_progress.$[elem].unlocked_at": now,
-                }
-            },
-            array_filters=[{"elem.badge_id": bid, "elem.is_completed": False}],
-        )
+            progress_list = user.get("challenges_progress") or []
+            target_map = {str(b.get("id") or b.get("_id")): int(b.get("target_value", 0)) for b in badges}
+
+            for p in progress_list:
+                bid = str(p.get("badge_id"))
+                if bid not in target_map:
+                    continue
+                if bool(p.get("is_completed")):
+                    continue
+                if int(p.get("current_value", 0)) >= target_map.get(bid, 0):
+                    # mark completed in array
+                    await users.update_one(
+                        {"_id": user_id},
+                        {"$set": {"challenges_progress.$[elem].is_completed": True, "challenges_progress.$[elem].unlocked_at": now}},
+                        array_filters=[{"elem.badge_id": bid, "elem.is_completed": False}],
+                        session=session,
+                    )
+                    # push to achievements if missing
+                    badge_doc = await badges_coll.find_one({"$or": [{"id": bid}, {"_id": bid}]}, session=session)
+                    badge_title = badge_doc.get("title") if badge_doc else None
+                    await users.update_one(
+                        {"_id": user_id, "$or": [{"achievements": {"$exists": False}}, {"achievements.badge_id": {"$ne": bid}}]},
+                        {"$push": {"achievements": {"badge_id": bid, "title": badge_title, "unlocked_at": now}}},
+                        session=session,
+                    )
+    finally:
+        await session.end_session()
 
     return {"success": True, "message": "Action tracked"}

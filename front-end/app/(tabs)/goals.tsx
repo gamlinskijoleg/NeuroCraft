@@ -328,34 +328,62 @@ export default function GoalsScreen() {
             }
 
             try {
-                const response = await fetch(API_URLS.GOALS, {
-                    headers: {
-                        Authorization: `Bearer ${session.access_token}`,
-                    },
-                });
-                const data = (await parseResponseBody(response)) as
-                    | GoalsResponse
+                const base = API_BASE.replace(/\/$/, "");
+                const headers = { Authorization: `Bearer ${session.access_token}` };
+
+                const [chResp, aResp] = await Promise.all([
+                    fetch(`${base}/users/${user?.id}/challenges`, { headers }),
+                    fetch(`${base}/users/${user?.id}/achievements`, { headers }),
+                ]);
+
+                const chBody = (await parseResponseBody(chResp)) as
+                    | { success: boolean; challenges?: unknown[] }
+                    | { detail?: string }
+                    | string
+                    | null;
+                const aBody = (await parseResponseBody(aResp)) as
+                    | { success: boolean; achievements?: unknown[] }
                     | { detail?: string }
                     | string
                     | null;
 
-                if (
-                    !response.ok ||
-                    !data ||
-                    typeof data !== "object" ||
-                    !("success" in data)
-                ) {
-                    const message =
-                        typeof data === "string"
-                            ? data
-                            : data && typeof data === "object" && "detail" in data && typeof data.detail === "string"
-                              ? data.detail
-                              : `Запит не виконано (${response.status})`;
-                    throw new Error(message);
+                if (!chResp.ok || !aResp.ok) {
+                    const msg = typeof chBody === "string" ? chBody : typeof aBody === "string" ? aBody : `Requests failed`;
+                    throw new Error(msg as string);
                 }
 
+                const challenges = Array.isArray((chBody as any)?.challenges) ? (chBody as any).challenges : [];
+                const achievements = Array.isArray((aBody as any)?.achievements) ? (aBody as any).achievements : [];
+
                 if (active) {
-                    setPayload(data);
+                    setPayload({
+                        success: true,
+                        message: "Goals fetched",
+                        user: {
+                            id: user?.id ?? "",
+                            email: user?.email ?? "",
+                            username: user?.username ?? null,
+                            is_active: true,
+                            created_at: user?.created_at ?? new Date().toISOString(),
+                        },
+                        challenges: challenges.map((c: any) => ({
+                            id: c.id,
+                            title: c.title,
+                            description: c.description,
+                            progress: c.current_value ?? 0,
+                            target: c.target_value ?? 0,
+                            accent: c.accent ?? "#2D8CFF",
+                            icon: c.type ?? "scan",
+                        })),
+                        achievements: achievements.map((a: any) => ({
+                            id: a.id,
+                            title: a.title,
+                            description: a.description,
+                            accent: a.accent ?? "#FFC53A",
+                            icon: a.type ?? "shield",
+                            unlocked: !a.is_locked,
+                        })),
+                    });
                 }
             } catch (e) {
                 if (active) {
