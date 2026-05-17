@@ -687,9 +687,28 @@ async def get_me(current_user: dict = Depends(get_current_user)):
 
 
 @app.post("/detect/cracks", response_model=ProcessingResult)
-async def detect_cracks_endpoint(file: UploadFile = File(...)):
+async def detect_cracks_endpoint(
+    file: UploadFile = File(...),
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+):
     image = await process_image_to_array(file)
     detections, proc_time = detect_cracks(image, source_name=file.filename)
+
+    # Auto-track scan actions when an Authorization Bearer token is present.
+    # This reuses the existing gamification logic to increment statistics
+    # and grant badges atomically where possible.
+    try:
+        if credentials and getattr(credentials, "scheme", "").lower() == "bearer":
+            payload = decode_access_token(credentials.credentials)
+            token_sub = payload.get("sub") if payload else None
+            if token_sub:
+                # local import to avoid circular import at module load
+                from gamification import track_action as _track_action, TrackActionRequest as _TrackActionRequest
+
+                await _track_action(token_sub, _TrackActionRequest(action_type="scan", increment=1), credentials)
+    except Exception as exc:  # don't fail the detection on tracking errors
+        logger.warning("Auto-track failed: %s", exc)
+
     return ProcessingResult(
         success=True,
         message=f"Оброблено",
