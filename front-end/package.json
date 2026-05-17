@@ -8,7 +8,7 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "build:apk": "cd android && ./gradlew assembleRelease",
-    "push:ios": "eas update --branch production --platform ios --message \"iOS OTA update\"",
+    "push": "eas update --branch production --message \"update\"",
     "format": "prettier --write ."
   },
   "dependencies": {

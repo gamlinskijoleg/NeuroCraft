@@ -493,6 +493,13 @@ async def register_account(payload: RegisterRequest):
     now = datetime.now(timezone.utc)
     normalized_email = _normalize_email(str(payload.email))
 
+    existing_user = await users.find_one({"email": normalized_email}, {"_id": 1})
+    if existing_user is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Email is already in use",
+        )
+
     user_doc = {
         "_id": str(uuid4()),
         "email": normalized_email,
@@ -504,10 +511,27 @@ async def register_account(payload: RegisterRequest):
 
     try:
         await users.insert_one(user_doc)
-    except DuplicateKeyError:
+    except DuplicateKeyError as exc:
+        logger.warning(
+            "Duplicate key while registering %s: %s",
+            normalized_email,
+            getattr(exc, "details", None) or str(exc),
+        )
+
+        duplicate_details = getattr(exc, "details", None) or {}
+        key_pattern = (
+            duplicate_details.get("keyPattern", {})
+            if isinstance(duplicate_details, dict)
+            else {}
+        )
+        if "email" in key_pattern:
+            detail = "Email is already in use"
+        else:
+            detail = "Registration conflicts with an existing account"
+
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Email is already in use",
+            detail=detail,
         )
 
     token = create_access_token(subject=user_doc["_id"])
