@@ -497,7 +497,7 @@ async def register_account(payload: RegisterRequest):
     if existing_user is not None:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Email is already in use",
+            detail="Ця електронна пошта вже зареєстрована",
         )
 
     user_doc = {
@@ -525,9 +525,9 @@ async def register_account(payload: RegisterRequest):
             else {}
         )
         if "email" in key_pattern:
-            detail = "Email is already in use"
+            detail = "Ця електронна пошта вже зареєстрована"
         else:
-            detail = "Registration conflicts with an existing account"
+            detail = "Не вдалося створити акаунт через наявний запис"
 
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -553,13 +553,13 @@ async def login_account(payload: LoginRequest):
     ):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials",
+            detail="Невірні облікові дані",
         )
 
     if not user_doc.get("is_active", True):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Account is deactivated",
+            detail="Обліковий запис деактивовано",
         )
 
     token = create_access_token(subject=user_doc["_id"])

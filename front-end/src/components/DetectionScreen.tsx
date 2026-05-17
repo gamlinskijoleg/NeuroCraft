@@ -114,7 +114,7 @@ export default function DetectionScreen({
         const permission =
             await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (!permission.granted) {
-            setError("Необхідний дозвіл на доступ до фотогалереї");
+            setError("Потрібен дозвіл на доступ до фотогалереї");
             return;
         }
         const picked = await ImagePicker.launchImageLibraryAsync({
@@ -151,7 +151,7 @@ export default function DetectionScreen({
         setDetections([]);
 
         if (API_BASE.length === 0) {
-            setError("Встановіть EXPO_PUBLIC_API_URL для релізних збірок");
+            setError("Укажіть EXPO_PUBLIC_API_URL для релізних збірок");
             return;
         }
 
@@ -173,7 +173,7 @@ export default function DetectionScreen({
 
             if (!res.ok || !data.success) {
                 throw new Error(
-                    data.message || `Request failed (${res.status})`,
+                    data.message || `Запит не виконано (${res.status})`,
                 );
             }
 
@@ -479,7 +479,7 @@ export default function DetectionScreen({
 
                 <Pressable style={styles.uploadBtn} onPress={pickImage}>
                     <Ionicons name="cloud-upload" size={20} color="#1A2241" />
-                    <Text style={styles.uploadBtnText}>
+                            <Text style={styles.uploadBtnText}>
                         {selectedImage
                             ? "Змінити зображення"
                             : "Завантажити зображення"}

@@ -91,8 +91,8 @@ function buildMapHtml(region: Region, markers: MarkerItem[]) {
                 });
 
                 const popupHtml = '<div>' +
-                    '<p class="marker-title">' + (marker.title || 'Road marker') + '</p>' +
-                    '<p class="marker-desc">' + (marker.description || 'No description provided') + '</p>' +
+                    '<p class="marker-title">' + (marker.title || 'Дорожня позначка') + '</p>' +
+                    '<p class="marker-desc">' + (marker.description || 'Опис не вказано') + '</p>' +
                     '</div>';
 
                 L.marker([marker.latitude, marker.longitude], { icon })
@@ -161,7 +161,7 @@ export default function MapScreen() {
                 }
             } catch (err: any) {
                 console.warn("Failed to load markers:", err);
-                setError(err?.message ?? "Failed to load markers");
+                setError(err?.message ?? "Не вдалося завантажити позначки");
             } finally {
                 setLoading(false);
             }
@@ -177,12 +177,12 @@ export default function MapScreen() {
             {loading ? (
                 <View style={styles.center}>
                     <ActivityIndicator size="large" />
-                    <Text style={styles.hint}>Loading map markers…</Text>
+                    <Text style={styles.hint}>Завантаження позначок карти…</Text>
                 </View>
             ) : error ? (
                 <View style={styles.center}>
                     <Text style={styles.error}>
-                        Could not load markers: {error}
+                        Не вдалося завантажити позначки: {error}
                     </Text>
                 </View>
             ) : (

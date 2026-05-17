@@ -14,25 +14,25 @@ export default function TabsLayout() {
                 <Tabs.Screen
                     name="index"
                     options={{
-                        title: "Home",
+                        title: "Головна",
                     }}
                 />
                 <Tabs.Screen
                     name="map"
                     options={{
-                        title: "Map",
+                        title: "Карта",
                     }}
                 />
                 <Tabs.Screen
                     name="goals"
                     options={{
-                        title: "Goals",
+                        title: "Цілі",
                     }}
                 />
                 <Tabs.Screen
                     name="user"
                     options={{
-                        title: "User",
+                        title: "Профіль",
                     }}
                 />
             </Tabs>

@@ -33,7 +33,7 @@ export default function RegisterScreen() {
 
     const handleSubmit = async () => {
         if (!email.trim() || !password.trim()) {
-            setErrorMessage("Fill in email and password.");
+            setErrorMessage("Заповніть електронну пошту та пароль.");
             return;
         }
 
@@ -44,8 +44,8 @@ export default function RegisterScreen() {
             router.replace("/");
         } catch (error) {
             const actualError = (error as any)?.error || error;
-            const errorMsg = actualError instanceof Error ? actualError.message : "Registration failed";
-            setErrorMessage(errorMsg || "An error occurred during registration");
+            const errorMsg = actualError instanceof Error ? actualError.message : "Не вдалося зареєструватися";
+            setErrorMessage(errorMsg || "Під час реєстрації сталася помилка");
         } finally {
             setIsSubmitting(false);
         }
@@ -57,7 +57,7 @@ export default function RegisterScreen() {
             // TODO: Implement Google sign-in
             console.log("Google sign-in not yet implemented");
         } catch (error) {
-            setErrorMessage("Google sign-in failed");
+            setErrorMessage("Не вдалося зареєструватися через Google");
         } finally {
             setIsSubmitting(false);
         }
@@ -69,7 +69,7 @@ export default function RegisterScreen() {
             // TODO: Implement Apple sign-in
             console.log("Apple sign-in not yet implemented");
         } catch (error) {
-            setErrorMessage("Apple sign-in failed");
+            setErrorMessage("Не вдалося зареєструватися через Apple");
         } finally {
             setIsSubmitting(false);
         }
@@ -90,19 +90,18 @@ export default function RegisterScreen() {
                     <View style={styles.hero}>
                         <Text style={styles.heroTitle}>EasyRoad</Text>
                         <Text style={styles.heroSubtitle}>
-                            Your reliable assistant, following the road with
-                            you.
+                            Ваш надійний помічник на дорозі.
                         </Text>
                     </View>
 
                     <View style={styles.card}>
-                        <Text style={styles.label}>Email</Text>
+                        <Text style={styles.label}>Електронна пошта</Text>
                         <TextInput
                             autoCapitalize="none"
                             autoComplete="email"
                             autoCorrect={false}
                             keyboardType="email-address"
-                            placeholder="Email"
+                            placeholder="Електронна пошта"
                             placeholderTextColor="rgba(255,255,255,0.35)"
                             style={styles.input}
                             value={email}
@@ -110,12 +109,12 @@ export default function RegisterScreen() {
                             editable={!isSubmitting}
                         />
 
-                        <Text style={styles.label}>Password</Text>
+                        <Text style={styles.label}>Пароль</Text>
                         <TextInput
                             autoCapitalize="none"
                             autoComplete="password"
                             autoCorrect={false}
-                            placeholder="Password"
+                            placeholder="Пароль"
                             placeholderTextColor="rgba(255,255,255,0.35)"
                             secureTextEntry
                             style={styles.input}
@@ -141,12 +140,12 @@ export default function RegisterScreen() {
                                 <ActivityIndicator color="#F4F7FB" />
                             ) : (
                                 <Text style={styles.primaryButtonText}>
-                                    Create an account
+                                    Створити акаунт
                                 </Text>
                             )}
                         </Pressable>
 
-                        <Text style={styles.orText}>Or sign in with</Text>
+                        <Text style={styles.orText}>Або увійдіть через</Text>
 
                         <View style={styles.socialButtonsContainer}>
                             <Pressable
@@ -184,8 +183,8 @@ export default function RegisterScreen() {
 
                         <Pressable onPress={() => router.push("/login")}>
                             <Text style={styles.link}>
-                                Already have account?{" "}
-                                <Text style={styles.linkBold}>Sign In</Text>
+                                Уже маєте обліковий запис?{" "}
+                                <Text style={styles.linkBold}>Увійти</Text>
                             </Text>
                         </Pressable>
                     </View>

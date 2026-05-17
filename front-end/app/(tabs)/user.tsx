@@ -36,21 +36,21 @@ export default function UserTabScreen() {
                     <View style={styles.authIcon}>
                         <Ionicons name="person-circle-outline" size={44} color="#1a1a2e" />
                     </View>
-                    <Text style={styles.authTitle}>Account required</Text>
+                    <Text style={styles.authTitle}>Потрібен обліковий запис</Text>
                     <Text style={styles.authText}>
-                        Sign in or create an account to keep your session on this device.
+                        Увійдіть або створіть обліковий запис, щоб зберегти сесію на цьому пристрої.
                     </Text>
                     <Pressable
                         onPress={() => router.push("/login")}
                         style={({ pressed }) => [styles.authButton, pressed && styles.pressed]}
                     >
-                        <Text style={styles.authButtonText}>Sign in</Text>
+                        <Text style={styles.authButtonText}>Увійти</Text>
                     </Pressable>
                     <Pressable
                         onPress={() => router.push("/register")}
                         style={({ pressed }) => [styles.authGhostButton, pressed && styles.pressed]}
                     >
-                        <Text style={styles.authGhostButtonText}>Create account</Text>
+                        <Text style={styles.authGhostButtonText}>Створити акаунт</Text>
                     </Pressable>
                 </View>
             </SafeAreaView>
@@ -73,7 +73,7 @@ export default function UserTabScreen() {
                         <Text style={styles.profileName}>{user.username}</Text>
                         <Text style={styles.profileEmail}>{user.email}</Text>
                         <Text style={styles.profileMeta}>
-                            Session stored locally on this device.
+                                Сесію збережено локально на цьому пристрої.
                         </Text>
                         <Pressable
                             onPress={async () => {
@@ -85,7 +85,7 @@ export default function UserTabScreen() {
                                 pressed && styles.pressed,
                             ]}
                         >
-                            <Text style={styles.logoutButtonText}>Log out</Text>
+                            <Text style={styles.logoutButtonText}>Вийти</Text>
                         </Pressable>
                     </View>
                 </View>

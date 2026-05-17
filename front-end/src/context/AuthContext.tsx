@@ -23,6 +23,25 @@ type AuthPayload = {
     password: string;
 };
 
+function translateAuthErrorMessage(message: string): string {
+    const normalized = message.trim();
+
+    switch (normalized) {
+        case "value is not a valid email address":
+            return "Введіть коректну адресу електронної пошти";
+        case "String should have at least 8 characters":
+            return "Пароль має містити щонайменше 8 символів";
+        case "String should have at most 128 characters":
+            return "Рядок має містити не більше 128 символів";
+        case "Field required":
+            return "Поле є обов'язковим";
+        case "Input should be a valid string":
+            return "Потрібно ввести текст";
+        default:
+            return message;
+    }
+}
+
 async function parseResponseBody(response: Response): Promise<unknown> {
     const rawBody = await response.text();
 
@@ -58,18 +77,20 @@ async function requestAuth(url: string, payload: AuthPayload): Promise<AuthSessi
         typeof data !== "object" ||
         !("access_token" in data)
     ) {
-        let message = "Request failed";
+        let message = "Запит не виконано";
 
         if (typeof data === "string") {
-            message = data;
+            message = translateAuthErrorMessage(data);
         } else if (data && typeof data === "object" && "detail" in data) {
             const detail = (data as any).detail;
             if (typeof detail === "string") {
-                message = detail;
+                message = translateAuthErrorMessage(detail);
             } else if (Array.isArray(detail) && detail.length > 0) {
                 // Handle Pydantic validation errors
                 const errorMessages = detail
-                    .map((err: any) => err.msg || JSON.stringify(err))
+                    .map((err: any) =>
+                        translateAuthErrorMessage(err.msg || JSON.stringify(err)),
+                    )
                     .join("; ");
                 message = errorMessages;
             }
@@ -141,7 +162,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useAuth() {
     const context = useContext(AuthContext);
     if (!context) {
-        throw new Error("useAuth must be used within AuthProvider");
+        throw new Error("useAuth має використовуватися всередині AuthProvider");
     }
     return context;
 }

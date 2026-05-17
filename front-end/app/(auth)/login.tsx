@@ -33,7 +33,7 @@ export default function LoginScreen() {
 
     const handleSubmit = async () => {
         if (!identifier.trim() || !password.trim()) {
-            setErrorMessage("Enter your email/username and password.");
+            setErrorMessage("Введіть електронну пошту/ім'я користувача та пароль.");
             return;
         }
 
@@ -44,8 +44,8 @@ export default function LoginScreen() {
             router.replace("/");
         } catch (error) {
             const actualError = (error as any)?.error || error;
-            const errorMsg = actualError instanceof Error ? actualError.message : "Login failed";
-            setErrorMessage(errorMsg || "An error occurred during login");
+            const errorMsg = actualError instanceof Error ? actualError.message : "Не вдалося увійти";
+            setErrorMessage(errorMsg || "Під час входу сталася помилка");
         } finally {
             setIsSubmitting(false);
         }
@@ -57,7 +57,7 @@ export default function LoginScreen() {
             // TODO: Implement Google sign-in
             console.log("Google sign-in not yet implemented");
         } catch (error) {
-            setErrorMessage("Google sign-in failed");
+            setErrorMessage("Не вдалося увійти через Google");
         } finally {
             setIsSubmitting(false);
         }
@@ -69,7 +69,7 @@ export default function LoginScreen() {
             // TODO: Implement Apple sign-in
             console.log("Apple sign-in not yet implemented");
         } catch (error) {
-            setErrorMessage("Apple sign-in failed");
+            setErrorMessage("Не вдалося увійти через Apple");
         } finally {
             setIsSubmitting(false);
         }
@@ -90,18 +90,18 @@ export default function LoginScreen() {
                     <View style={styles.hero}>
                         <Text style={styles.heroTitle}>EasyRoad</Text>
                         <Text style={styles.heroSubtitle}>
-                            Your reliable assistant, following the road with you.
+                            Ваш надійний помічник на дорозі.
                         </Text>
                     </View>
 
                     <View style={styles.card}>
-                        <Text style={styles.label}>Email</Text>
+                        <Text style={styles.label}>Електронна пошта</Text>
                         <TextInput
                             autoCapitalize="none"
                             autoComplete="email"
                             autoCorrect={false}
                             keyboardType="email-address"
-                            placeholder="Email"
+                            placeholder="Електронна пошта"
                             placeholderTextColor="rgba(255,255,255,0.35)"
                             style={styles.input}
                             value={identifier}
@@ -109,12 +109,12 @@ export default function LoginScreen() {
                             editable={!isSubmitting}
                         />
 
-                        <Text style={styles.label}>Password</Text>
+                        <Text style={styles.label}>Пароль</Text>
                         <TextInput
                             autoCapitalize="none"
                             autoComplete="password"
                             autoCorrect={false}
-                            placeholder="Password"
+                            placeholder="Пароль"
                             placeholderTextColor="rgba(255,255,255,0.35)"
                             secureTextEntry
                             style={styles.input}
@@ -139,11 +139,11 @@ export default function LoginScreen() {
                             {isSubmitting ? (
                                 <ActivityIndicator color="#0B0F1A" />
                             ) : (
-                                <Text style={styles.primaryButtonText}>Sign In</Text>
+                                <Text style={styles.primaryButtonText}>Увійти</Text>
                             )}
                         </Pressable>
 
-                        <Text style={styles.orText}>Or sign in with</Text>
+                        <Text style={styles.orText}>Або увійдіть через</Text>
 
                         <View style={styles.socialButtonsContainer}>
                             <Pressable
@@ -173,8 +173,8 @@ export default function LoginScreen() {
 
                         <Pressable onPress={() => router.push("/register")}>
                             <Text style={styles.link}>
-                                Don't have account?{" "}
-                                <Text style={styles.linkBold}>Create an account</Text>
+                                Немає облікового запису?{" "}
+                                <Text style={styles.linkBold}>Створити акаунт</Text>
                             </Text>
                         </Pressable>
                     </View>
