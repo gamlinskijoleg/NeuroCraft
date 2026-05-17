@@ -177,7 +177,9 @@ export default function MapScreen() {
             {loading ? (
                 <View style={styles.center}>
                     <ActivityIndicator size="large" />
-                    <Text style={styles.hint}>Завантаження позначок карти…</Text>
+                    <Text style={styles.hint}>
+                        Завантаження позначок карти…
+                    </Text>
                 </View>
             ) : error ? (
                 <View style={styles.center}>

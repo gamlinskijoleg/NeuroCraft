@@ -479,7 +479,7 @@ export default function DetectionScreen({
 
                 <Pressable style={styles.uploadBtn} onPress={pickImage}>
                     <Ionicons name="cloud-upload" size={20} color="#1A2241" />
-                            <Text style={styles.uploadBtnText}>
+                    <Text style={styles.uploadBtnText}>
                         {selectedImage
                             ? "Змінити зображення"
                             : "Завантажити зображення"}

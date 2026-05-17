@@ -34,23 +34,38 @@ export default function UserTabScreen() {
                 <StatusBar barStyle="dark-content" />
                 <View style={styles.authCard}>
                     <View style={styles.authIcon}>
-                        <Ionicons name="person-circle-outline" size={44} color="#1a1a2e" />
+                        <Ionicons
+                            name="person-circle-outline"
+                            size={44}
+                            color="#1a1a2e"
+                        />
                     </View>
-                    <Text style={styles.authTitle}>Потрібен обліковий запис</Text>
+                    <Text style={styles.authTitle}>
+                        Потрібен обліковий запис
+                    </Text>
                     <Text style={styles.authText}>
-                        Увійдіть або створіть обліковий запис, щоб зберегти сесію на цьому пристрої.
+                        Увійдіть або створіть обліковий запис, щоб зберегти
+                        сесію на цьому пристрої.
                     </Text>
                     <Pressable
                         onPress={() => router.push("/login")}
-                        style={({ pressed }) => [styles.authButton, pressed && styles.pressed]}
+                        style={({ pressed }) => [
+                            styles.authButton,
+                            pressed && styles.pressed,
+                        ]}
                     >
                         <Text style={styles.authButtonText}>Увійти</Text>
                     </Pressable>
                     <Pressable
                         onPress={() => router.push("/register")}
-                        style={({ pressed }) => [styles.authGhostButton, pressed && styles.pressed]}
+                        style={({ pressed }) => [
+                            styles.authGhostButton,
+                            pressed && styles.pressed,
+                        ]}
                     >
-                        <Text style={styles.authGhostButtonText}>Створити акаунт</Text>
+                        <Text style={styles.authGhostButtonText}>
+                            Створити акаунт
+                        </Text>
                     </Pressable>
                 </View>
             </SafeAreaView>
@@ -73,7 +88,7 @@ export default function UserTabScreen() {
                         <Text style={styles.profileName}>{user.username}</Text>
                         <Text style={styles.profileEmail}>{user.email}</Text>
                         <Text style={styles.profileMeta}>
-                                Сесію збережено локально на цьому пристрої.
+                            Сесію збережено локально на цьому пристрої.
                         </Text>
                         <Pressable
                             onPress={async () => {

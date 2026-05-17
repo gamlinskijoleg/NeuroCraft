@@ -33,7 +33,9 @@ export default function LoginScreen() {
 
     const handleSubmit = async () => {
         if (!identifier.trim() || !password.trim()) {
-            setErrorMessage("Введіть електронну пошту/ім'я користувача та пароль.");
+            setErrorMessage(
+                "Введіть електронну пошту/ім'я користувача та пароль.",
+            );
             return;
         }
 
@@ -44,7 +46,10 @@ export default function LoginScreen() {
             router.replace("/");
         } catch (error) {
             const actualError = (error as any)?.error || error;
-            const errorMsg = actualError instanceof Error ? actualError.message : "Не вдалося увійти";
+            const errorMsg =
+                actualError instanceof Error
+                    ? actualError.message
+                    : "Не вдалося увійти";
             setErrorMessage(errorMsg || "Під час входу сталася помилка");
         } finally {
             setIsSubmitting(false);
@@ -139,7 +144,9 @@ export default function LoginScreen() {
                             {isSubmitting ? (
                                 <ActivityIndicator color="#0B0F1A" />
                             ) : (
-                                <Text style={styles.primaryButtonText}>Увійти</Text>
+                                <Text style={styles.primaryButtonText}>
+                                    Увійти
+                                </Text>
                             )}
                         </Pressable>
 
@@ -155,7 +162,11 @@ export default function LoginScreen() {
                                     isSubmitting && styles.disabledSocial,
                                 ]}
                             >
-                                <Ionicons name="logo-google" size={24} color="#F4F7FB" />
+                                <Ionicons
+                                    name="logo-google"
+                                    size={24}
+                                    color="#F4F7FB"
+                                />
                             </Pressable>
 
                             <Pressable
@@ -167,14 +178,20 @@ export default function LoginScreen() {
                                     isSubmitting && styles.disabledSocial,
                                 ]}
                             >
-                                <Ionicons name="logo-apple" size={24} color="#F4F7FB" />
+                                <Ionicons
+                                    name="logo-apple"
+                                    size={24}
+                                    color="#F4F7FB"
+                                />
                             </Pressable>
                         </View>
 
                         <Pressable onPress={() => router.push("/register")}>
                             <Text style={styles.link}>
                                 Немає облікового запису?{" "}
-                                <Text style={styles.linkBold}>Створити акаунт</Text>
+                                <Text style={styles.linkBold}>
+                                    Створити акаунт
+                                </Text>
                             </Text>
                         </Pressable>
                     </View>

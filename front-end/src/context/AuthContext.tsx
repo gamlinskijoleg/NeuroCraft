@@ -56,7 +56,10 @@ async function parseResponseBody(response: Response): Promise<unknown> {
     }
 }
 
-async function requestAuth(url: string, payload: AuthPayload): Promise<AuthSession> {
+async function requestAuth(
+    url: string,
+    payload: AuthPayload,
+): Promise<AuthSession> {
     const response = await fetch(url, {
         method: "POST",
         headers: {
@@ -89,7 +92,9 @@ async function requestAuth(url: string, payload: AuthPayload): Promise<AuthSessi
                 // Handle Pydantic validation errors
                 const errorMessages = detail
                     .map((err: any) =>
-                        translateAuthErrorMessage(err.msg || JSON.stringify(err)),
+                        translateAuthErrorMessage(
+                            err.msg || JSON.stringify(err),
+                        ),
                     )
                     .join("; ");
                 message = errorMessages;
@@ -156,7 +161,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         [isReady, session],
     );
 
-    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+    return (
+        <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+    );
 }
 
 export function useAuth() {

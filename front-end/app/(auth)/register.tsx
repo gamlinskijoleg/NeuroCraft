@@ -44,7 +44,10 @@ export default function RegisterScreen() {
             router.replace("/");
         } catch (error) {
             const actualError = (error as any)?.error || error;
-            const errorMsg = actualError instanceof Error ? actualError.message : "Не вдалося зареєструватися";
+            const errorMsg =
+                actualError instanceof Error
+                    ? actualError.message
+                    : "Не вдалося зареєструватися";
             setErrorMessage(errorMsg || "Під час реєстрації сталася помилка");
         } finally {
             setIsSubmitting(false);
