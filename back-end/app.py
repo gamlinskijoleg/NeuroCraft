@@ -45,6 +45,10 @@ app = FastAPI(
     redirect_slashes=False,
 )
 
+# Gamification routes (challenges & achievements)
+from gamification import router as gamification_router
+app.include_router(gamification_router, prefix="/users", tags=["gamification"])
+
 # Класи
 CRACK_CLASSES = [
     "Поздовжня тріщина",
@@ -117,6 +121,33 @@ class RoadMarker(BaseModel):
     title: str
     description: str
     severity: int = 1
+
+
+class GoalChallenge(BaseModel):
+    id: str
+    title: str
+    description: str
+    progress: int
+    target: int
+    accent: str
+    icon: str
+
+
+class GoalAchievement(BaseModel):
+    id: str
+    title: str
+    description: str
+    accent: str
+    icon: str
+    unlocked: bool = False
+
+
+class GoalsResponse(BaseModel):
+    success: bool = True
+    message: str
+    user: UserPublic
+    challenges: list[GoalChallenge]
+    achievements: list[GoalAchievement]
 
 
 models_status = {
@@ -485,6 +516,86 @@ async def get_markers():
             severity=1,
         ),
     ]
+
+
+@app.get("/goals", response_model=GoalsResponse)
+async def get_goals(current_user: dict = Depends(get_current_user)):
+    return GoalsResponse(
+        message="Цілі завантажено",
+        user=_to_user_public(current_user),
+        challenges=[
+            GoalChallenge(
+                id="first-scan",
+                title="First Scan",
+                description="Scan your first road",
+                progress=1,
+                target=1,
+                accent="#49B36A",
+                icon="scan",
+            ),
+            GoalChallenge(
+                id="pothole-hunter",
+                title="Pothole Hunter",
+                description="Report 5 potholes",
+                progress=2,
+                target=5,
+                accent="#FF8A3D",
+                icon="pothole",
+            ),
+            GoalChallenge(
+                id="sign-spotter",
+                title="Sign Spotter",
+                description="Detect 10 road signs",
+                progress=4,
+                target=10,
+                accent="#4C7DFF",
+                icon="sign",
+            ),
+            GoalChallenge(
+                id="safe-route",
+                title="Safe Route",
+                description="Scan 3 safe roads",
+                progress=1,
+                target=3,
+                accent="#2FBF71",
+                icon="shield",
+            ),
+        ],
+        achievements=[
+            GoalAchievement(
+                id="starter",
+                title="First Scan Complete",
+                description="Finish your first road scan",
+                accent="#49B36A",
+                icon="scan",
+                unlocked=True,
+            ),
+            GoalAchievement(
+                id="reporter",
+                title="Pothole Reporter",
+                description="Collect 5 reported potholes",
+                accent="#FF8A3D",
+                icon="pothole",
+                unlocked=True,
+            ),
+            GoalAchievement(
+                id="observer",
+                title="Road Observer",
+                description="Detect 10 traffic signs",
+                accent="#4C7DFF",
+                icon="sign",
+                unlocked=False,
+            ),
+            GoalAchievement(
+                id="guardian",
+                title="Road Guardian",
+                description="Build a streak of safe scans",
+                accent="#2FBF71",
+                icon="shield",
+                unlocked=False,
+            ),
+        ],
+    )
 
 
 @app.post("/auth/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)

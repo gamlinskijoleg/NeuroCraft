@@ -24,3 +24,36 @@ export type DetectionScreenConfig = {
     bboxColor: { border: string; bg: string };
     descriptionBgColor: string;
 };
+
+export type GoalChallenge = {
+    id: string;
+    title: string;
+    description: string;
+    progress: number;
+    target: number;
+    accent: string;
+    icon: string;
+};
+
+export type GoalAchievement = {
+    id: string;
+    title: string;
+    description: string;
+    accent: string;
+    icon: string;
+    unlocked: boolean;
+};
+
+export type GoalsResponse = {
+    success: boolean;
+    message: string;
+    user: {
+        id: string;
+        email: string;
+        username?: string | null;
+        is_active: boolean;
+        created_at: string;
+    };
+    challenges: GoalChallenge[];
+    achievements: GoalAchievement[];
+};
