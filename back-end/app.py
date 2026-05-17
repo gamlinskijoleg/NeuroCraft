@@ -228,7 +228,7 @@ def load_models():
 
             model = models.resnet50(weights=None)
             num_ftrs = model.fc.in_features
-            model.fc = nn.Linear(num_ftrs, num_classes)
+            model.fc = nn.Sequential(nn.Dropout(0.3), nn.Linear(num_ftrs, num_classes)) # type: ignore
 
             model.load_state_dict(state_dict)
             model.to(DEVICE)
